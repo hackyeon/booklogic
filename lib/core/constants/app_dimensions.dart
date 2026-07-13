@@ -11,4 +11,17 @@ class AppDimensions {
   static const iconSize = 24.0;
   static const shelfHeight = 220.0;
   static const shelfBookWidth = 32.0;
+  static const bookshelfMaxWidth = 420.0;
+  static const bookSpacing = 10.0;
+  static const bookAspectRatio = 0.44;
+  static const bookshelfShelfHeight = 14.0;
+  static const bookCornerRadius = 12.0;
+  static const bookSelectionLift = 8.0;
+  static const bookSelectedScale = 1.05;
+  static const bookSelectedBorderWidth = 2.0;
+  static const bookSelectionHeadroom = 16.0;
+  static const bookClearLift = 4.0;
+  static const bookClearScale = 1.03;
+  static const bookClearBorderWidth = 2.0;
+  static const resultCardMaxWidth = 360.0;
 }
