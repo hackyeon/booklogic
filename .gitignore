@@ -1,0 +1,96 @@
+# Kotlin compiler session
+/android/.kotlin/
+
+# Misc
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+.idea/
+.vscode/
+
+# IntelliJ / Android Studio
+*.iml
+*.ipr
+*.iws
+out/
+
+# Flutter / Dart / Packages
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+
+# Generated files
+**/generated_plugin_registrant.dart
+
+# Flutter web
+
+# Symbolication
+app.*.symbols
+
+# Obfuscation
+app.*.map.json
+
+# Android
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+
+/android/local.properties
+/android/**/captures/
+/android/.gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/key.properties
+
+# Keystore
+*.jks
+*.keystore
+*.pem
+
+# iOS
+/ios/Flutter/.last_build_id
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_lldbinit
+/ios/Pods/
+/ios/.symlinks/
+/ios/DerivedData/
+
+# macOS
+/macos/Flutter/ephemeral/
+
+# Linux
+/linux/flutter/ephemeral/
+
+# Windows
+/windows/flutter/ephemeral/
+
+# Fuchsia
+/fuchsia/.packages
+/fuchsia/build/
+
+# Coverage
+coverage/
+lcov.info
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase_app_id_file.json
+
+# Environment
+.env
+.env.*
