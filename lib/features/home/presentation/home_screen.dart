@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../app/app_routes.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/progress/game_progress_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({required this.progressController, super.key});
+
+  final GameProgressController progressController;
 
   @override
   Widget build(BuildContext context) {
@@ -34,10 +37,59 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: AppDimensions.sectionSpacing),
               const _BookshelfPreview(),
               const Spacer(),
-              FilledButton(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed(AppRoutes.game),
-                child: const Text(AppStrings.continueButton),
+              AnimatedBuilder(
+                animation: progressController,
+                builder: (context, _) {
+                  final isLoading =
+                      progressController.status == GameProgressStatus.initial ||
+                      progressController.isLoading;
+                  final level = progressController.currentLevel;
+                  final continueLabel = '계속하기 · Level $level';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (isLoading) ...[
+                        Semantics(
+                          liveRegion: true,
+                          child: const Text(
+                            AppStrings.progressLoading,
+                            key: Key('game_progress_loading'),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: AppDimensions.smallSpacing),
+                      ],
+                      if (!isLoading &&
+                          progressController.lastError != null) ...[
+                        const Text(
+                          AppStrings.progressLoadWarning,
+                          key: Key('home_progress_load_warning'),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppDimensions.smallSpacing),
+                      ],
+                      Semantics(
+                        button: true,
+                        enabled: !isLoading,
+                        label: '계속하기, Level $level',
+                        child: FilledButton(
+                          key: const Key('home_continue_button'),
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.of(
+                                  context,
+                                ).pushNamed(AppRoutes.game),
+                          child: Text(
+                            continueLabel,
+                            key: const Key('home_progress_level'),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: AppDimensions.mediumSpacing),
               OutlinedButton(

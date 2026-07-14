@@ -12,6 +12,9 @@ class ClearResultOverlay extends StatelessWidget {
     required this.onRetry,
     required this.onHome,
     required this.onNextLevel,
+    this.isPreparingNextLevel = false,
+    this.nextLevelErrorMessage,
+    this.isProgressSaveError = false,
     super.key,
   });
 
@@ -20,10 +23,14 @@ class ClearResultOverlay extends StatelessWidget {
   final VoidCallback onRetry;
   final VoidCallback onHome;
   final VoidCallback onNextLevel;
+  final bool isPreparingNextLevel;
+  final String? nextLevelErrorMessage;
+  final bool isProgressSaveError;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final canUseButtons = !isPreparingNextLevel;
 
     return Positioned.fill(
       key: const Key('clear_result_overlay'),
@@ -99,13 +106,46 @@ class ClearResultOverlay extends StatelessWidget {
                             color: AppColors.textSecondary,
                           ),
                         ),
+                        if (nextLevelErrorMessage != null) ...[
+                          const SizedBox(height: AppDimensions.mediumSpacing),
+                          Semantics(
+                            liveRegion: true,
+                            child: Container(
+                              key: Key(
+                                isProgressSaveError
+                                    ? 'clear_progress_save_error'
+                                    : 'clear_next_level_error',
+                              ),
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(
+                                AppDimensions.mediumSpacing,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.errorContainer,
+                                borderRadius: BorderRadius.circular(
+                                  AppDimensions.cardRadius,
+                                ),
+                              ),
+                              child: Text(
+                                nextLevelErrorMessage!,
+                                textAlign: TextAlign.center,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: AppDimensions.sectionSpacing),
                         SizedBox(
                           width: double.infinity,
                           child: FilledButton(
                             key: const Key('clear_next_level_button'),
-                            onPressed: onNextLevel,
-                            child: const Text(AppStrings.nextLevelButton),
+                            onPressed: canUseButtons ? onNextLevel : null,
+                            child: _NextLevelButtonContent(
+                              isPreparing: isPreparingNextLevel,
+                            ),
                           ),
                         ),
                         const SizedBox(height: AppDimensions.smallSpacing),
@@ -113,13 +153,13 @@ class ClearResultOverlay extends StatelessWidget {
                           width: double.infinity,
                           child: OutlinedButton(
                             key: const Key('clear_retry_button'),
-                            onPressed: onRetry,
+                            onPressed: canUseButtons ? onRetry : null,
                             child: const Text(AppStrings.retryButton),
                           ),
                         ),
                         TextButton(
                           key: const Key('clear_home_button'),
-                          onPressed: onHome,
+                          onPressed: canUseButtons ? onHome : null,
                           child: const Text(AppStrings.homeButton),
                         ),
                       ],
@@ -131,6 +171,39 @@ class ClearResultOverlay extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _NextLevelButtonContent extends StatelessWidget {
+  const _NextLevelButtonContent({required this.isPreparing});
+
+  final bool isPreparing;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isPreparing) {
+      return const Text(AppStrings.nextLevelButton);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(
+          key: Key('clear_next_level_progress'),
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+        const SizedBox(width: AppDimensions.smallSpacing),
+        Flexible(
+          child: Text(
+            AppStrings.preparingNextLevelButton,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

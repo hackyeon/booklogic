@@ -7,6 +7,8 @@ class AppStrings {
   static const continueButton = '계속하기';
   static const settingsButton = '설정';
   static const levelOne = 'Level 1';
+  static const progressLoading = '진행도를 불러오는 중입니다';
+  static const progressLoadWarning = '저장된 진행도를 불러오지 못해 Level 1부터 시작합니다.';
 
   static const bookshelfArea = '책장 영역';
   static const gameInstruction = '책장을 확인해보세요';
@@ -30,8 +32,13 @@ class AppStrings {
   static const clearResultTitle = '책장 정리 완료!';
   static const homeButton = '홈으로';
   static const retryButton = '다시하기';
+  static const generationRetryButton = '다시 시도';
   static const nextLevelButton = '다음 레벨';
-  static const nextLevelNextStepMessage = '다음 레벨 진행은 후속 단계에서 구현됩니다.';
+  static const preparingNextLevelButton = '다음 레벨 준비 중';
+  static const nextLevelPreparationError = '다음 레벨을 준비하지 못했습니다. 다시 시도해 주세요.';
+  static const progressSaveError = '다음 레벨 진행도를 저장하지 못했습니다. 다시 시도해 주세요.';
+  static const generationErrorTitle = '퍼즐을 불러오지 못했습니다';
+  static const generationLoading = '퍼즐을 준비하고 있습니다';
 
   static const sound = '효과음';
   static const music = '배경음악';

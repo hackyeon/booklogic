@@ -18,10 +18,12 @@ class BookshelfWidget extends StatelessWidget {
     required this.isClearing,
     required this.isCleared,
     required this.clearActiveBookId,
+    this.slotCount,
     super.key,
   });
 
   final List<BookPlacement> placements;
+  final int? slotCount;
   final String? selectedBookId;
   final ValueChanged<String> onBookTap;
   final bool isAnimating;
@@ -44,9 +46,10 @@ class BookshelfWidget extends StatelessWidget {
         final shelfWidth = maxAvailableWidth > AppDimensions.bookshelfMaxWidth
             ? AppDimensions.bookshelfMaxWidth
             : maxAvailableWidth;
-        final bookCount = placements.length;
-        final spacingTotal = AppDimensions.bookSpacing * (bookCount - 1);
-        final bookWidth = (shelfWidth - spacingTotal) / bookCount;
+        final effectiveSlotCount = _effectiveSlotCount();
+        final spacingTotal =
+            AppDimensions.bookSpacing * (effectiveSlotCount - 1);
+        final bookWidth = (shelfWidth - spacingTotal) / effectiveSlotCount;
         final bookHeight = bookWidth / AppDimensions.bookAspectRatio;
         final shelfTop = AppDimensions.bookSelectionHeadroom + bookHeight;
         final totalHeight = shelfTop + AppDimensions.bookshelfShelfHeight;
@@ -123,6 +126,14 @@ class BookshelfWidget extends StatelessWidget {
 
   double _slotLeft(int slotIndex, double bookWidth) {
     return slotIndex * (bookWidth + AppDimensions.bookSpacing);
+  }
+
+  int _effectiveSlotCount() {
+    final count = slotCount ?? placements.length;
+    if (count < 1) {
+      return 1;
+    }
+    return count;
   }
 
   List<BookPlacement> _paintOrderedPlacements() {

@@ -10,29 +10,77 @@ import '../domain/book.dart';
 import '../domain/book_placement.dart';
 import '../domain/clue.dart';
 import '../domain/clue_evaluator.dart';
+import '../generator/generated_stage.dart';
+import '../generator/generator_config.dart';
 
 class GameController extends ChangeNotifier {
   GameController({
     required List<BookPlacement> initialPlacements,
-    required List<Clue> initialClues,
-    this.swapDuration = AppDurations.bookSwap,
-    this.clueCompletionDelay = AppDurations.clueCompletionDelay,
-    this.clearBookStepDuration = AppDurations.clearBookStep,
-    this.clearFinalGlowDuration = AppDurations.clearFinalGlow,
+    List<Clue>? initialClues,
+    List<Clue>? clues,
+    int level = 1,
+    Duration swapDuration = AppDurations.bookSwap,
+    Duration clueCompletionDelay = AppDurations.clueCompletionDelay,
+    Duration clearBookStepDuration = AppDurations.clearBookStep,
+    Duration clearFinalGlowDuration = AppDurations.clearFinalGlow,
     ClueEvaluator clueEvaluator = const ClueEvaluator(),
-  }) : _initialPlacements = List<BookPlacement>.unmodifiable(
+  }) : this._(
+         initialPlacements: initialPlacements,
+         clues: _resolveClues(initialClues: initialClues, clues: clues),
+         level: level,
+         generatedStage: null,
+         swapDuration: swapDuration,
+         clueCompletionDelay: clueCompletionDelay,
+         clearBookStepDuration: clearBookStepDuration,
+         clearFinalGlowDuration: clearFinalGlowDuration,
+         clueEvaluator: clueEvaluator,
+       );
+
+  factory GameController.fromGeneratedStage({
+    required GeneratedStage stage,
+    ClueEvaluator clueEvaluator = const ClueEvaluator(),
+    Duration swapDuration = AppDurations.bookSwap,
+    Duration clueCompletionDelay = AppDurations.clueCompletionDelay,
+    Duration clearBookStepDuration = AppDurations.clearBookStep,
+    Duration clearFinalGlowDuration = AppDurations.clearFinalGlow,
+  }) {
+    return GameController._(
+      initialPlacements: stage.initialPlacements,
+      clues: stage.clues,
+      level: stage.level,
+      generatedStage: stage,
+      clueEvaluator: clueEvaluator,
+      swapDuration: swapDuration,
+      clueCompletionDelay: clueCompletionDelay,
+      clearBookStepDuration: clearBookStepDuration,
+      clearFinalGlowDuration: clearFinalGlowDuration,
+    );
+  }
+
+  GameController._({
+    required List<BookPlacement> initialPlacements,
+    required List<Clue> clues,
+    required int level,
+    required GeneratedStage? generatedStage,
+    required this.swapDuration,
+    required this.clueCompletionDelay,
+    required this.clearBookStepDuration,
+    required this.clearFinalGlowDuration,
+    required ClueEvaluator clueEvaluator,
+  }) : _level = _validateLevel(level),
+       _generatedStage = generatedStage,
+       _initialPlacements = List<BookPlacement>.unmodifiable(
          List<BookPlacement>.of(initialPlacements),
        ),
        _placements = List<BookPlacement>.of(initialPlacements),
-       _clues = List<Clue>.of(initialClues),
+       _clues = List<Clue>.unmodifiable(List<Clue>.of(clues)),
        _clueEvaluator = clueEvaluator,
        _satisfiedClueIds = Set<String>.of(
-         clueEvaluator.evaluateAll(
-           clues: initialClues,
-           placements: initialPlacements,
-         ),
+         clueEvaluator.evaluateAll(clues: clues, placements: initialPlacements),
        );
 
+  final int _level;
+  final GeneratedStage? _generatedStage;
   final List<BookPlacement> _initialPlacements;
   List<BookPlacement> _placements;
   final List<Clue> _clues;
@@ -65,6 +113,24 @@ class GameController extends ChangeNotifier {
 
   UnmodifiableListView<Clue> get clues {
     return UnmodifiableListView(_clues);
+  }
+
+  GeneratedStage? get generatedStage => _generatedStage;
+
+  bool get isGeneratedStageGame => _generatedStage != null;
+
+  int get level => _level;
+
+  int get generatorVersion {
+    return _generatedStage?.generatorVersion ?? GeneratorConfig.currentVersion;
+  }
+
+  int get booksPerTier {
+    final stage = _generatedStage;
+    if (stage != null) {
+      return stage.booksPerTier;
+    }
+    return _initialPlacements.length;
   }
 
   Set<String> get satisfiedClueIds {
@@ -348,4 +414,22 @@ class GameController extends ChangeNotifier {
     _cancelAllGameTimers();
     super.dispose();
   }
+}
+
+List<Clue> _resolveClues({List<Clue>? initialClues, List<Clue>? clues}) {
+  if (initialClues != null && clues != null) {
+    throw ArgumentError('initialClues와 clues 중 하나만 전달해야 합니다.');
+  }
+  final resolved = initialClues ?? clues;
+  if (resolved == null) {
+    throw ArgumentError('initialClues 또는 clues가 필요합니다.');
+  }
+  return resolved;
+}
+
+int _validateLevel(int level) {
+  if (level < 1) {
+    throw ArgumentError.value(level, 'level', '1 이상이어야 합니다.');
+  }
+  return level;
 }

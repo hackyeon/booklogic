@@ -22,5 +22,7 @@ class AppColors {
   static const clueSatisfiedIcon = Color(0xFF2F7D4F);
   static const clearAccent = Color(0xFFE8C35A);
   static const clearGlow = Color(0x66E8C35A);
+  static const error = Color(0xFF9B2C2C);
+  static const errorContainer = Color(0xFFFFE8E1);
   static const overlayScrim = Color(0x99000000);
 }

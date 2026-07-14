@@ -10,4 +10,6 @@ abstract final class GeneratorConfig {
   static const int fnvPrime = 0x01000193;
 
   static const int zeroSeedFallback = 0x6D2B79F5;
+
+  static const int t01ScrambleSalt = 0x9E3779B9;
 }
