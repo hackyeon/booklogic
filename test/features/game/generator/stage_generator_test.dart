@@ -558,10 +558,10 @@ void main() {
         () => StageGenerator(
           attemptBuilder: builder,
           fallbackFactory: fallbackFactory,
-        ).generate(level: 21),
+        ).generate(level: 51),
         throwsUnsupportedError,
       );
-      expect(builder.supportChecks, 1);
+      expect(builder.supportChecks, 0);
       expect(builder.attempts, isEmpty);
       expect(fallbackFactory.fallbackAttempts, isEmpty);
     });

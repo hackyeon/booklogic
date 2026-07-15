@@ -317,6 +317,8 @@ void main() {
         ClueType.edgePosition,
         ClueType.relativeOrder,
         ClueType.adjacent,
+        ClueType.bothEdges,
+        ClueType.between,
       ]);
       expect(demoClues, hasLength(3));
       expect(demoClues.map((clue) => clue.id), [
@@ -3473,7 +3475,7 @@ void main() {
     expect(_visibleBookOrder(tester), _generatedLevel1TargetIds);
   });
 
-  testWidgets('level 20 keeps result overlay when level 21 is unsupported', (
+  testWidgets('level 20 advances to level 21 T02 and saves progress', (
     tester,
   ) async {
     final store = FakeGameProgressStore(
@@ -3509,14 +3511,126 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('game_generation_error')), findsNothing);
+    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
+    expect(find.byKey(const Key('clear_next_level_error')), findsNothing);
+    expect(find.text('Level 21'), findsOneWidget);
+    expect(_visibleBookOrder(tester, _generatedLevel21BookIds), [
+      'purple_diamond',
+      'blue_leaf',
+      'orange_cloud_copy_02',
+      'orange_cloud_copy_01',
+      'red_sun',
+      'red_star',
+    ]);
+    expect(find.text('${AppStrings.clueTitle} 1/4'), findsOneWidget);
+    expect(store.writeCount, 1);
+    expect(progressController.currentLevel, 21);
+    expect(progressController.highestUnlockedLevel, 21);
+
+    progressController.dispose();
+  });
+
+  testWidgets('level 22 advances to level 23 T03 and saves progress', (
+    tester,
+  ) async {
+    final store = FakeGameProgressStore(
+      progress: GameProgress(
+        schemaVersion: 1,
+        currentLevel: 22,
+        highestUnlockedLevel: 22,
+        generatorVersion: 1,
+      ),
+    );
+    final progressController = GameProgressController(store: store);
+    await progressController.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _gameScreen(level: 22, progressController: progressController),
+      ),
+    );
+
+    expect(find.text('Level 22'), findsOneWidget);
+    expect(
+      _visibleBookOrder(tester, _generatedLevel22BookIds),
+      _generatedLevel22BookIds,
+    );
+
+    await _clearGeneratedLevel22Game(tester);
+
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.text('Level 22'), findsWidgets);
+    expect(find.text('${AppStrings.moveCountPrefix} 4회'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('clear_next_level_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('game_generation_error')), findsNothing);
+    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
+    expect(find.byKey(const Key('clear_next_level_error')), findsNothing);
+    expect(find.text('Level 23'), findsOneWidget);
+    expect(
+      _visibleBookOrder(tester, _generatedLevel23BookIds),
+      _generatedLevel23BookIds,
+    );
+    expect(find.text('${AppStrings.clueTitle} 2/5'), findsOneWidget);
+    expect(
+      find.byKey(
+        const Key('clue_t03_c05_02_blue_moon_immediately_right_of_green_group'),
+      ),
+      findsOneWidget,
+    );
+    expect(store.writeCount, 1);
+    expect(progressController.currentLevel, 23);
+    expect(progressController.highestUnlockedLevel, 23);
+
+    progressController.dispose();
+  });
+
+  testWidgets('level 50 keeps result overlay when level 51 is unsupported', (
+    tester,
+  ) async {
+    final store = FakeGameProgressStore(
+      progress: GameProgress(
+        schemaVersion: 1,
+        currentLevel: 50,
+        highestUnlockedLevel: 50,
+        generatorVersion: 1,
+      ),
+    );
+    final progressController = GameProgressController(store: store);
+    await progressController.load();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _gameScreen(level: 50, progressController: progressController),
+      ),
+    );
+
+    expect(find.text('Level 50'), findsOneWidget);
+    expect(
+      _visibleBookOrder(tester, _generatedLevel50BookIds),
+      _generatedLevel50BookIds,
+    );
+
+    await _clearGeneratedLevel50Game(tester);
+
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.text('Level 50'), findsWidgets);
+    expect(find.text('${AppStrings.moveCountPrefix} 3회'), findsWidgets);
+
+    await tester.tap(find.byKey(const Key('clear_next_level_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('game_generation_error')), findsNothing);
     expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
     expect(find.byKey(const Key('clear_next_level_error')), findsOneWidget);
-    expect(find.text('Level 21은 아직 이용할 수 없습니다.'), findsOneWidget);
-    expect(find.text('Level 21'), findsNothing);
-    expect(find.text('Level 20'), findsWidgets);
+    expect(find.text('Level 51은 아직 이용할 수 없습니다.'), findsOneWidget);
+    expect(find.text('Level 51'), findsNothing);
+    expect(find.text('Level 50'), findsWidgets);
     expect(store.writeCount, 0);
-    expect(progressController.currentLevel, 20);
-    expect(progressController.highestUnlockedLevel, 20);
+    expect(progressController.currentLevel, 50);
+    expect(progressController.highestUnlockedLevel, 50);
 
     progressController.dispose();
   });
@@ -3680,11 +3794,11 @@ void main() {
     expect(generator.callCount, 1);
   });
 
-  testWidgets('level 21 is handled by generation error view', (tester) async {
-    await tester.pumpWidget(MaterialApp(home: _gameScreen(level: 21)));
+  testWidgets('level 51 is handled by generation error view', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: _gameScreen(level: 51)));
 
     expect(find.byKey(const Key('game_generation_error')), findsOneWidget);
-    expect(find.text('Level 21을 생성하는 중 문제가 발생했습니다.'), findsOneWidget);
+    expect(find.text('Level 51을 생성하는 중 문제가 발생했습니다.'), findsOneWidget);
     expect(find.byKey(const Key('bookshelf_tier_0')), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -3780,6 +3894,38 @@ const _generatedLevel20BookIds = [
   'green_key',
   'blue_star',
   'yellow_sun',
+];
+const _generatedLevel21BookIds = [
+  'purple_diamond',
+  'blue_leaf',
+  'orange_cloud_copy_02',
+  'orange_cloud_copy_01',
+  'red_sun',
+  'red_star',
+];
+const _generatedLevel22BookIds = [
+  'blue_leaf',
+  'yellow_leaf_copy_02',
+  'blue_moon',
+  'yellow_leaf_copy_01',
+  'purple_cloud',
+  'red_moon',
+];
+const _generatedLevel23BookIds = [
+  'blue_moon',
+  'yellow_leaf',
+  'orange_leaf',
+  'purple_cloud',
+  'green_drop_copy_02',
+  'green_drop_copy_01',
+];
+const _generatedLevel50BookIds = [
+  'purple_cloud',
+  'orange_drop_copy_02',
+  'red_diamond',
+  'orange_drop_copy_01',
+  'yellow_drop',
+  'yellow_leaf',
 ];
 const _generatedLevel6BookIds = [
   'yellow_drop',
@@ -3939,6 +4085,47 @@ Future<void> _clearGeneratedLevel20Game(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('book_yellow_sun')));
   await _finishSwap(tester);
   await _finishClear(tester, _generatedLevel20BookIds.length);
+}
+
+Future<void> _clearGeneratedLevel22Game(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_blue_moon')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_blue_leaf')));
+  await _finishSwap(tester);
+  await _settleClueState(tester);
+  await tester.tap(find.byKey(const Key('book_blue_leaf')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_red_moon')));
+  await _finishSwap(tester);
+  await _settleClueState(tester);
+  await tester.tap(find.byKey(const Key('book_red_moon')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_yellow_leaf_copy_02')));
+  await _finishSwap(tester);
+  await _settleClueState(tester);
+  await tester.tap(find.byKey(const Key('book_yellow_leaf_copy_02')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_purple_cloud')));
+  await _finishSwap(tester);
+  await _finishClear(tester, _generatedLevel22BookIds.length);
+}
+
+Future<void> _clearGeneratedLevel50Game(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('book_orange_drop_copy_02')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_yellow_drop')));
+  await _finishSwap(tester);
+  await _settleClueState(tester);
+  await tester.tap(find.byKey(const Key('book_yellow_drop')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_yellow_leaf')));
+  await _finishSwap(tester);
+  await _settleClueState(tester);
+  await tester.tap(find.byKey(const Key('book_yellow_leaf')));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byKey(const Key('book_purple_cloud')));
+  await _finishSwap(tester);
+  await _finishClear(tester, _generatedLevel50BookIds.length);
 }
 
 void _expectGeneratedLevel1CluesVisible() {

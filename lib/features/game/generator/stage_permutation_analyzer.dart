@@ -1,6 +1,7 @@
 import '../domain/book_placement.dart';
 import '../domain/book_position.dart';
 import 'book_swap_step.dart';
+import 'book_code.dart';
 
 class StagePermutationAnalyzer {
   const StagePermutationAnalyzer();
@@ -57,6 +58,57 @@ class StagePermutationAnalyzer {
     return permutation.length - cycleCount;
   }
 
+  int minimumVisualSwapDistance({
+    required List<BookPlacement> target,
+    required List<BookPlacement> current,
+  }) {
+    final sortedTarget = _sortedPlacements(target);
+    final sortedCurrent = _sortedPlacements(current);
+    if (sortedTarget.length != sortedCurrent.length) {
+      throw ArgumentError('target and current must have the same length.');
+    }
+    if (!_hasSameVisualMultiset(sortedTarget, sortedCurrent)) {
+      throw StateError('current and target visual book sets differ.');
+    }
+
+    final targetIndexesByVisual = <String, List<int>>{};
+    for (var index = 0; index < sortedTarget.length; index += 1) {
+      final visualKey = _visualKey(sortedTarget[index]);
+      targetIndexesByVisual.putIfAbsent(visualKey, () => <int>[]).add(index);
+    }
+
+    var bestDistance = sortedTarget.length;
+    final usedIndexesByVisual = <String, Set<int>>{};
+    final permutation = List<int>.filled(sortedCurrent.length, -1);
+
+    void search(int currentIndex) {
+      if (currentIndex == sortedCurrent.length) {
+        final distance = _distanceForPermutation(permutation);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+        }
+        return;
+      }
+
+      final visualKey = _visualKey(sortedCurrent[currentIndex]);
+      final candidates = targetIndexesByVisual[visualKey]!;
+      final used = usedIndexesByVisual.putIfAbsent(visualKey, () => <int>{});
+      for (final targetIndex in candidates) {
+        if (used.contains(targetIndex)) {
+          continue;
+        }
+        used.add(targetIndex);
+        permutation[currentIndex] = targetIndex;
+        search(currentIndex + 1);
+        permutation[currentIndex] = -1;
+        used.remove(targetIndex);
+      }
+    }
+
+    search(0);
+    return bestDistance;
+  }
+
   List<BookPlacement> replayForward({
     required List<BookPlacement> start,
     required List<BookSwapStep> swapHistory,
@@ -86,6 +138,23 @@ class StagePermutationAnalyzer {
     }
     for (var index = 0; index < sortedFirst.length; index += 1) {
       if (sortedFirst[index].book.id != sortedSecond[index].book.id) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool hasSameVisualOrder({
+    required List<BookPlacement> first,
+    required List<BookPlacement> second,
+  }) {
+    final sortedFirst = _sortedPlacements(first);
+    final sortedSecond = _sortedPlacements(second);
+    if (sortedFirst.length != sortedSecond.length) {
+      return false;
+    }
+    for (var index = 0; index < sortedFirst.length; index += 1) {
+      if (_visualKey(sortedFirst[index]) != _visualKey(sortedSecond[index])) {
         return false;
       }
     }
@@ -143,5 +212,58 @@ class StagePermutationAnalyzer {
       return tierComparison;
     }
     return left.position.slotIndex.compareTo(right.position.slotIndex);
+  }
+
+  int _distanceForPermutation(List<int> permutation) {
+    final visited = List<bool>.filled(permutation.length, false);
+    var cycleCount = 0;
+    for (var index = 0; index < permutation.length; index += 1) {
+      if (visited[index]) {
+        continue;
+      }
+      cycleCount += 1;
+      var currentIndex = index;
+      while (!visited[currentIndex]) {
+        visited[currentIndex] = true;
+        currentIndex = permutation[currentIndex];
+      }
+    }
+    return permutation.length - cycleCount;
+  }
+
+  bool _hasSameVisualMultiset(
+    List<BookPlacement> target,
+    List<BookPlacement> current,
+  ) {
+    final targetCounts = _visualCounts(target);
+    final currentCounts = _visualCounts(current);
+    if (targetCounts.length != currentCounts.length) {
+      return false;
+    }
+    for (final entry in targetCounts.entries) {
+      if (currentCounts[entry.key] != entry.value) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Map<String, int> _visualCounts(List<BookPlacement> placements) {
+    final counts = <String, int>{};
+    for (final placement in placements) {
+      counts.update(
+        _visualKey(placement),
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+    }
+    return counts;
+  }
+
+  String _visualKey(BookPlacement placement) {
+    return BookCode.bookId(
+      color: placement.book.color,
+      symbol: placement.book.symbol,
+    );
   }
 }

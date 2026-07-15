@@ -616,6 +616,10 @@ void _expectSelectorsResolveOnce(Clue clue, List<BookPlacement> placements) {
     case RelativeOrderClue(:final subject, :final reference):
       _expectSelectorResolvesOnce(subject, placements);
       _expectSelectorResolvesOnce(reference, placements);
+    case BothEdgesClue():
+      fail('T01 selector helper does not accept BothEdgesClue.');
+    case BetweenClue():
+      fail('T01 selector helper does not accept BetweenClue.');
   }
 }
 

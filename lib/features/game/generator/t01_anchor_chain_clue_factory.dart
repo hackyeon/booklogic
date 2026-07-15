@@ -245,6 +245,10 @@ class T01AnchorChainClueFactory {
         }
         _validateSelector(subject, targetPlacements);
         _validateSelector(reference, targetPlacements);
+      case BothEdgesClue():
+        throw StateError('T01 clue shape must not use BothEdgesClue.');
+      case BetweenClue():
+        throw StateError('T01 clue shape must not use BetweenClue.');
     }
   }
 

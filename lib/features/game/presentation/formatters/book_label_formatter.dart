@@ -8,6 +8,14 @@ class BookLabelFormatter {
     return '${_colorLabel(book.color)} ${_symbolLabel(book.symbol)} 책';
   }
 
+  String formatColor(BookColor color) {
+    return _colorLabel(color);
+  }
+
+  String formatSymbol(BookSymbol symbol) {
+    return _symbolLabel(symbol);
+  }
+
   String formatSelector({
     required BookSelector selector,
     required List<Book> books,

@@ -1,1 +1,1 @@
-enum ClueType { edgePosition, relativeOrder, adjacent }
+enum ClueType { edgePosition, relativeOrder, adjacent, bothEdges, between }

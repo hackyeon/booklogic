@@ -15,6 +15,9 @@ class ClueTextFormatter {
       EdgePositionClue(:final subject, :final tierIndex, :final edge) =>
         '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}의 '
             '${_edgeText(edge)} 끝에 있다.',
+      BothEdgesClue(:final subject, :final tierIndex) =>
+        '두 ${_selectorColorText(subject)} 책은 ${_tierLabel(tierIndex)}의 '
+            '양 끝에 있다.',
       RelativeOrderClue(
         :final subject,
         :final reference,
@@ -23,6 +26,9 @@ class ClueTextFormatter {
       ) =>
         '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에서 '
             '${_referenceText(reference, books)}보다 ${_relationText(relation)}에 있다.',
+      BetweenClue(:final subject, :final boundary, :final tierIndex) =>
+        '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에서 '
+            '두 ${_selectorColorText(boundary)} 책 사이에 있다.',
       AdjacentClue(
         :final subject,
         :final reference,
@@ -30,7 +36,7 @@ class ClueTextFormatter {
         :final direction,
       ) =>
         '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에서 '
-            '${_referenceText(reference, books)} 바로 ${_adjacentText(direction)}에 있다.',
+            '${_adjacentReferenceText(reference, books)} 바로 ${_adjacentText(direction)}에 있다.',
     };
   }
 
@@ -40,6 +46,14 @@ class ClueTextFormatter {
 
   String _referenceText(BookSelector selector, List<Book> books) {
     return bookLabelFormatter.formatSelector(selector: selector, books: books);
+  }
+
+  String _adjacentReferenceText(BookSelector selector, List<Book> books) {
+    return switch (selector) {
+      BookColorSelector(:final color) =>
+        '두 ${bookLabelFormatter.formatColor(color)} 책 묶음',
+      _ => _referenceText(selector, books),
+    };
   }
 
   String _tierLabel(int tierIndex) {
@@ -64,6 +78,16 @@ class ClueTextFormatter {
     return switch (direction) {
       AdjacentDirection.immediatelyLeftOf => '왼쪽',
       AdjacentDirection.immediatelyRightOf => '오른쪽',
+    };
+  }
+
+  String _selectorColorText(BookSelector selector) {
+    return switch (selector) {
+      BookColorSelector(:final color) => bookLabelFormatter.formatColor(color),
+      _ => bookLabelFormatter.formatSelector(
+        selector: selector,
+        books: const [],
+      ),
     };
   }
 }

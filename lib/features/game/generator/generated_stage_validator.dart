@@ -6,6 +6,7 @@ import '../domain/book_selector_resolver.dart';
 import '../domain/clue.dart';
 import '../domain/clue_evaluator.dart';
 import 'book_code.dart';
+import 'book_instance_code.dart';
 import 'book_swap_step.dart';
 import 'generated_stage.dart';
 import 'generator_config.dart';
@@ -38,6 +39,7 @@ class GeneratedStageValidator {
       expectedCount: stage.totalBookCount,
       code: StageValidationIssueCode.invalidTargetPlacements,
       label: 'targetPlacements',
+      templateId: stage.templateId,
       issues: issues,
     );
     _validatePlacements(
@@ -45,11 +47,23 @@ class GeneratedStageValidator {
       expectedCount: stage.totalBookCount,
       code: StageValidationIssueCode.invalidInitialPlacements,
       label: 'initialPlacements',
+      templateId: stage.templateId,
       issues: issues,
     );
-    _validateBookUniqueness(stage.targetPlacements, issues, 'target');
-    _validateBookUniqueness(stage.initialPlacements, issues, 'initial');
+    _validateBookUniqueness(
+      stage.targetPlacements,
+      issues,
+      'target',
+      stage.templateId,
+    );
+    _validateBookUniqueness(
+      stage.initialPlacements,
+      issues,
+      'initial',
+      stage.templateId,
+    );
     _validateBookSet(stage, issues);
+    _validateTemplateTargetStructure(stage, issues);
     _validateClues(stage, issues);
     _validateTargetSatisfaction(stage, issues);
     _validateInitialIncomplete(stage, issues);
@@ -110,27 +124,64 @@ class GeneratedStageValidator {
     List<StageValidationIssue> issues,
   ) {
     final spec = stage.stageSpec;
-    if (stage.templateId != PuzzleTemplateId.t01AnchorChain) {
-      _add(
-        issues,
-        StageValidationIssueCode.unsupportedTemplate,
-        'Only T01 Anchor Chain is supported.',
-      );
-    }
-    if (spec.level < 1 ||
-        spec.generatorVersion < 1 ||
-        spec.generationKey.attempt != 0 ||
-        spec.tierCount != 1 ||
-        spec.totalBookCount < 4 ||
-        spec.totalBookCount > 6 ||
-        spec.duplicateGroupCount != 0 ||
-        spec.targetSwapCount < 1 ||
-        spec.targetSwapCount > spec.totalBookCount - 1) {
-      _add(
-        issues,
-        StageValidationIssueCode.invalidStageSpec,
-        'StageSpec is outside T01 generated stage constraints.',
-      );
+    switch (stage.templateId) {
+      case PuzzleTemplateId.t01AnchorChain:
+        if (spec.level < 1 ||
+            spec.generatorVersion < 1 ||
+            spec.generationKey.attempt != 0 ||
+            spec.tierCount != 1 ||
+            spec.totalBookCount < 4 ||
+            spec.totalBookCount > 6 ||
+            spec.duplicateGroupCount != 0 ||
+            spec.targetSwapCount < 1 ||
+            spec.targetSwapCount > spec.totalBookCount - 1) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidStageSpec,
+            'StageSpec is outside T01 generated stage constraints.',
+          );
+        }
+      case PuzzleTemplateId.t02EdgeSandwich:
+        if (spec.level < 21 ||
+            spec.level > 50 ||
+            spec.generatorVersion < 1 ||
+            spec.generationKey.attempt != 0 ||
+            spec.tierCount != 1 ||
+            spec.booksPerTier != 6 ||
+            spec.totalBookCount != 6 ||
+            spec.duplicateGroupCount != 1 ||
+            spec.maxDuplicateCopies < 2 ||
+            spec.clueCount < 4 ||
+            spec.clueCount > 5 ||
+            spec.targetSwapCount < 3 ||
+            spec.targetSwapCount > 4) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidStageSpec,
+            'StageSpec is outside T02 generated stage constraints.',
+          );
+        }
+      case PuzzleTemplateId.t03AdjacentBlocks:
+        if (spec.level < 23 ||
+            spec.level > 47 ||
+            (spec.level - 23) % 4 != 0 ||
+            spec.generatorVersion < 1 ||
+            spec.generationKey.attempt != 0 ||
+            spec.tierCount != 1 ||
+            spec.booksPerTier != 6 ||
+            spec.totalBookCount != 6 ||
+            spec.duplicateGroupCount != 1 ||
+            spec.maxDuplicateCopies < 2 ||
+            spec.clueCount < 4 ||
+            spec.clueCount > 5 ||
+            spec.targetSwapCount < 3 ||
+            spec.targetSwapCount > 4) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidStageSpec,
+            'StageSpec is outside T03 generated stage constraints.',
+          );
+        }
     }
   }
 
@@ -139,6 +190,7 @@ class GeneratedStageValidator {
     required int expectedCount,
     required StageValidationIssueCode code,
     required String label,
+    required PuzzleTemplateId templateId,
     required List<StageValidationIssue> issues,
   }) {
     if (placements.length != expectedCount) {
@@ -163,12 +215,11 @@ class GeneratedStageValidator {
       slots.add(position.slotIndex);
       if (book.id.isEmpty) {
         _add(issues, code, '$label contains an empty Book.id.');
-      } else if (book.id !=
-          BookCode.bookId(color: book.color, symbol: book.symbol)) {
+      } else if (!_bookIdMatchesTemplate(book, templateId)) {
         _add(
           issues,
           code,
-          '$label contains a Book.id that does not match BookCode.',
+          '$label contains a Book.id that does not match visual data.',
           book.id,
         );
       }
@@ -185,9 +236,10 @@ class GeneratedStageValidator {
     List<BookPlacement> placements,
     List<StageValidationIssue> issues,
     String label,
+    PuzzleTemplateId templateId,
   ) {
     final ids = <String>{};
-    final visuals = <String>{};
+    final visualCounts = <String, int>{};
     for (final placement in placements) {
       final book = placement.book;
       if (!ids.add(book.id)) {
@@ -199,14 +251,33 @@ class GeneratedStageValidator {
         );
       }
       final visualKey = _visualKey(book);
-      if (!visuals.add(visualKey)) {
-        _add(
-          issues,
-          StageValidationIssueCode.duplicateVisualBook,
-          '$label contains duplicate color + symbol.',
-          visualKey,
-        );
-      }
+      visualCounts.update(visualKey, (count) => count + 1, ifAbsent: () => 1);
+    }
+
+    switch (templateId) {
+      case PuzzleTemplateId.t01AnchorChain:
+        for (final entry in visualCounts.entries) {
+          if (entry.value > 1) {
+            _add(
+              issues,
+              StageValidationIssueCode.duplicateVisualBook,
+              '$label contains duplicate color + symbol.',
+              entry.key,
+            );
+          }
+        }
+      case PuzzleTemplateId.t02EdgeSandwich:
+      case PuzzleTemplateId.t03AdjacentBlocks:
+        final duplicateGroups = visualCounts.entries
+            .where((entry) => entry.value > 1)
+            .toList();
+        if (duplicateGroups.length != 1 || duplicateGroups.single.value != 2) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidDuplicateStructure,
+            '$label must contain exactly one duplicate visual pair.',
+          );
+        }
     }
   }
 
@@ -236,13 +307,25 @@ class GeneratedStageValidator {
   }
 
   void _validateClues(GeneratedStage stage, List<StageValidationIssue> issues) {
-    if (stage.clues.length != stage.stageSpec.clueCount ||
-        stage.clues.length < 2 ||
-        stage.clues.length > stage.totalBookCount - 1) {
+    final clueCountIsValid = switch (stage.templateId) {
+      PuzzleTemplateId.t01AnchorChain =>
+        stage.clues.length == stage.stageSpec.clueCount &&
+            stage.clues.length >= 2 &&
+            stage.clues.length <= stage.totalBookCount - 1,
+      PuzzleTemplateId.t02EdgeSandwich =>
+        stage.clues.length == stage.stageSpec.clueCount &&
+            stage.clues.length >= 4 &&
+            stage.clues.length <= 5,
+      PuzzleTemplateId.t03AdjacentBlocks =>
+        stage.clues.length == stage.stageSpec.clueCount &&
+            stage.clues.length >= 4 &&
+            stage.clues.length <= 5,
+    };
+    if (!clueCountIsValid) {
       _add(
         issues,
         StageValidationIssueCode.invalidClueCount,
-        'Clue count is outside StageSpec or T01 bounds.',
+        'Clue count is outside StageSpec or template bounds.',
       );
     }
 
@@ -265,12 +348,43 @@ class GeneratedStageValidator {
           clue.id,
         );
       }
-      _validateClueStructure(index: index, clue: clue, issues: issues);
+      _validateClueStructure(
+        stage: stage,
+        index: index,
+        clue: clue,
+        issues: issues,
+      );
       _validateClueSelectors(stage: stage, clue: clue, issues: issues);
     }
   }
 
   void _validateClueStructure({
+    required GeneratedStage stage,
+    required int index,
+    required Clue clue,
+    required List<StageValidationIssue> issues,
+  }) {
+    switch (stage.templateId) {
+      case PuzzleTemplateId.t01AnchorChain:
+        _validateT01ClueStructure(index: index, clue: clue, issues: issues);
+      case PuzzleTemplateId.t02EdgeSandwich:
+        _validateT02ClueStructure(
+          stage: stage,
+          index: index,
+          clue: clue,
+          issues: issues,
+        );
+      case PuzzleTemplateId.t03AdjacentBlocks:
+        _validateT03ClueStructure(
+          stage: stage,
+          index: index,
+          clue: clue,
+          issues: issues,
+        );
+    }
+  }
+
+  void _validateT01ClueStructure({
     required int index,
     required Clue clue,
     required List<StageValidationIssue> issues,
@@ -322,7 +436,79 @@ class GeneratedStageValidator {
         }
         _validateBookIdSelector(subject, clue.id, issues);
         _validateBookIdSelector(reference, clue.id, issues);
+      case BothEdgesClue():
+        _add(
+          issues,
+          StageValidationIssueCode.invalidClueStructure,
+          'T01 clues must not use BothEdgesClue.',
+          clue.id,
+        );
+      case BetweenClue():
+        _add(
+          issues,
+          StageValidationIssueCode.invalidClueStructure,
+          'T01 clues must not use BetweenClue.',
+          clue.id,
+        );
     }
+  }
+
+  void _validateT02ClueStructure({
+    required GeneratedStage stage,
+    required int index,
+    required Clue clue,
+    required List<StageValidationIssue> issues,
+  }) {
+    final shape = _t02TargetShape(stage.targetPlacements);
+    if (shape == null) {
+      _add(
+        issues,
+        StageValidationIssueCode.invalidT02ClueStructure,
+        'T02 clue structure cannot be validated without a valid target.',
+        clue.id,
+      );
+      return;
+    }
+
+    if (_matchesT02Clue(index: index, clue: clue, shape: shape)) {
+      return;
+    }
+
+    _add(
+      issues,
+      StageValidationIssueCode.invalidT02ClueStructure,
+      'T02 clue does not match the fixed clue sequence.',
+      clue.id,
+    );
+  }
+
+  void _validateT03ClueStructure({
+    required GeneratedStage stage,
+    required int index,
+    required Clue clue,
+    required List<StageValidationIssue> issues,
+  }) {
+    final shape = _t03TargetShape(stage.targetPlacements);
+    if (shape == null) {
+      _add(
+        issues,
+        StageValidationIssueCode.invalidT03ClueStructure,
+        'T03 clue structure cannot be validated without a valid target.',
+        clue.id,
+      );
+      return;
+    }
+
+    if (_matchesT03Clue(index: index, clue: clue, shape: shape)) {
+      return;
+    }
+
+    _add(
+      issues,
+      StageValidationIssueCode.invalidT03ClueStructure,
+      'T03 clue does not match the fixed clue sequence.',
+      clue.id,
+    );
   }
 
   void _validateBookIdSelector(
@@ -354,11 +540,17 @@ class GeneratedStageValidator {
         selector: selector,
         placements: stage.initialPlacements,
       );
-      if (targetResolved.length != 1 || initialResolved.length != 1) {
+      if (!_selectorCardinalityIsAllowed(
+        templateId: stage.templateId,
+        clue: clue,
+        selector: selector,
+        targetCount: targetResolved.length,
+        initialCount: initialResolved.length,
+      )) {
         _add(
           issues,
           StageValidationIssueCode.unresolvedClueSelector,
-          'Clue selector must resolve exactly one book in target and initial.',
+          'Clue selector resolves an invalid number of books.',
           clue.id,
         );
       }
@@ -394,10 +586,7 @@ class GeneratedStageValidator {
         StageValidationIssueCode.initialAlreadySatisfiesAllClues,
         'Initial placements already satisfy every clue.',
       );
-    } else if (permutationAnalyzer.hasSameBookOrder(
-      first: stage.targetPlacements,
-      second: stage.initialPlacements,
-    )) {
+    } else if (_hasSameTemplateOrder(stage)) {
       _add(
         issues,
         StageValidationIssueCode.initialAlreadySatisfiesAllClues,
@@ -410,14 +599,17 @@ class GeneratedStageValidator {
     GeneratedStage stage,
     List<StageValidationIssue> issues,
   ) {
-    final expectedSeed = _expectedScrambleSeed(stage.generationAttemptSeed);
+    final expectedSeed = _expectedScrambleSeed(
+      stage.generationAttemptSeed,
+      stage.templateId,
+    );
     if (stage.scrambleSeed < 1 ||
         stage.scrambleSeed > GeneratorConfig.uint32Mask ||
         stage.scrambleSeed != expectedSeed) {
       _add(
         issues,
         StageValidationIssueCode.invalidScrambleSeed,
-        'Scramble seed does not match T01 seed rule.',
+        'Scramble seed does not match template seed rule.',
         stage.scrambleSeed.toString(),
       );
     }
@@ -561,14 +753,27 @@ class GeneratedStageValidator {
     List<StageValidationIssue> issues,
   ) {
     try {
-      final distance = permutationAnalyzer.minimumSwapDistance(
-        target: stage.targetPlacements,
-        current: stage.initialPlacements,
-      );
+      final distance = switch (stage.templateId) {
+        PuzzleTemplateId.t01AnchorChain =>
+          permutationAnalyzer.minimumSwapDistance(
+            target: stage.targetPlacements,
+            current: stage.initialPlacements,
+          ),
+        PuzzleTemplateId.t02EdgeSandwich =>
+          permutationAnalyzer.minimumVisualSwapDistance(
+            target: stage.targetPlacements,
+            current: stage.initialPlacements,
+          ),
+        PuzzleTemplateId.t03AdjacentBlocks =>
+          permutationAnalyzer.minimumVisualSwapDistance(
+            target: stage.targetPlacements,
+            current: stage.initialPlacements,
+          ),
+      };
       if (distance != stage.targetSwapCount) {
         _add(
           issues,
-          StageValidationIssueCode.minimumSwapDistanceMismatch,
+          _minimumDistanceIssueCode(stage.templateId),
           'Minimum swap distance $distance does not match targetSwapCount '
           '${stage.targetSwapCount}.',
         );
@@ -576,7 +781,7 @@ class GeneratedStageValidator {
     } catch (error) {
       _add(
         issues,
-        StageValidationIssueCode.minimumSwapDistanceMismatch,
+        _minimumDistanceIssueCode(stage.templateId),
         'Minimum swap distance failed: $error',
       );
     }
@@ -604,11 +809,13 @@ class GeneratedStageValidator {
   List<BookSelector> _selectorsFor(Clue clue) {
     return switch (clue) {
       EdgePositionClue(:final subject) => [subject],
+      BothEdgesClue(:final subject) => [subject],
       AdjacentClue(:final subject, :final reference) => [subject, reference],
       RelativeOrderClue(:final subject, :final reference) => [
         subject,
         reference,
       ],
+      BetweenClue(:final subject, :final boundary) => [subject, boundary],
     };
   }
 
@@ -655,10 +862,363 @@ class GeneratedStageValidator {
     return BookCode.bookId(color: book.color, symbol: book.symbol);
   }
 
-  int _expectedScrambleSeed(int stageSeed) {
-    final value =
-        (stageSeed ^ GeneratorConfig.t01ScrambleSalt) &
-        GeneratorConfig.uint32Mask;
+  bool _bookIdMatchesTemplate(Book book, PuzzleTemplateId templateId) {
+    return switch (templateId) {
+      PuzzleTemplateId.t01AnchorChain =>
+        book.id == BookCode.bookId(color: book.color, symbol: book.symbol),
+      PuzzleTemplateId.t02EdgeSandwich => BookInstanceCode.matchesBook(book),
+      PuzzleTemplateId.t03AdjacentBlocks => BookInstanceCode.matchesBook(book),
+    };
+  }
+
+  void _validateTemplateTargetStructure(
+    GeneratedStage stage,
+    List<StageValidationIssue> issues,
+  ) {
+    switch (stage.templateId) {
+      case PuzzleTemplateId.t01AnchorChain:
+        return;
+      case PuzzleTemplateId.t02EdgeSandwich:
+        if (_t02TargetShape(stage.targetPlacements) == null) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidT02TargetStructure,
+            'T02 target must match the Edge Sandwich structure.',
+          );
+        }
+      case PuzzleTemplateId.t03AdjacentBlocks:
+        if (_t03TargetShape(stage.targetPlacements) == null) {
+          _add(
+            issues,
+            StageValidationIssueCode.invalidT03TargetStructure,
+            'T03 target must match the Adjacent Blocks structure.',
+          );
+        }
+    }
+  }
+
+  _T02TargetShape? _t02TargetShape(List<BookPlacement> placements) {
+    final sorted = _sortedPlacements(placements);
+    if (sorted.length != 6) {
+      return null;
+    }
+    for (var index = 0; index < sorted.length; index += 1) {
+      if (sorted[index].position.tierIndex != 0 ||
+          sorted[index].position.slotIndex != index) {
+        return null;
+      }
+    }
+
+    final edgeLeft = sorted[0].book;
+    final fillerA = sorted[1].book;
+    final fillerB = sorted[2].book;
+    final duplicateCopy01 = sorted[3].book;
+    final duplicateCopy02 = sorted[4].book;
+    final edgeRight = sorted[5].book;
+
+    if (edgeLeft.color != edgeRight.color ||
+        edgeLeft.symbol == edgeRight.symbol) {
+      return null;
+    }
+    if (_visualKey(duplicateCopy01) != _visualKey(duplicateCopy02)) {
+      return null;
+    }
+    if (duplicateCopy01.id !=
+            BookInstanceCode.duplicateCopyId(
+              color: duplicateCopy01.color,
+              symbol: duplicateCopy01.symbol,
+              copyNumber: 1,
+            ) ||
+        duplicateCopy02.id !=
+            BookInstanceCode.duplicateCopyId(
+              color: duplicateCopy02.color,
+              symbol: duplicateCopy02.symbol,
+              copyNumber: 2,
+            )) {
+      return null;
+    }
+    if (duplicateCopy01.color == edgeLeft.color ||
+        fillerA.color == edgeLeft.color ||
+        fillerA.color == duplicateCopy01.color ||
+        fillerB.color == edgeLeft.color ||
+        fillerB.color == duplicateCopy01.color ||
+        fillerB.color == fillerA.color) {
+      return null;
+    }
+    return _T02TargetShape(
+      edgeLeft: edgeLeft,
+      fillerA: fillerA,
+      fillerB: fillerB,
+      duplicateCopy01: duplicateCopy01,
+      duplicateCopy02: duplicateCopy02,
+      edgeRight: edgeRight,
+    );
+  }
+
+  _T03TargetShape? _t03TargetShape(List<BookPlacement> placements) {
+    final sorted = _sortedPlacements(placements);
+    if (sorted.length != 6) {
+      return null;
+    }
+    for (var index = 0; index < sorted.length; index += 1) {
+      if (sorted[index].position.tierIndex != 0 ||
+          sorted[index].position.slotIndex != index) {
+        return null;
+      }
+    }
+
+    final blockAFirst = sorted[0].book;
+    final blockAMiddle = sorted[1].book;
+    final blockALast = sorted[2].book;
+    final duplicateCopy01 = sorted[3].book;
+    final duplicateCopy02 = sorted[4].book;
+    final blockBEnd = sorted[5].book;
+
+    if (blockAFirst.id !=
+            BookCode.bookId(
+              color: blockAFirst.color,
+              symbol: blockAFirst.symbol,
+            ) ||
+        blockAMiddle.id !=
+            BookCode.bookId(
+              color: blockAMiddle.color,
+              symbol: blockAMiddle.symbol,
+            ) ||
+        blockALast.id !=
+            BookCode.bookId(
+              color: blockALast.color,
+              symbol: blockALast.symbol,
+            ) ||
+        blockBEnd.id !=
+            BookCode.bookId(color: blockBEnd.color, symbol: blockBEnd.symbol)) {
+      return null;
+    }
+    if (_visualKey(duplicateCopy01) != _visualKey(duplicateCopy02)) {
+      return null;
+    }
+    if (duplicateCopy01.id !=
+            BookInstanceCode.duplicateCopyId(
+              color: duplicateCopy01.color,
+              symbol: duplicateCopy01.symbol,
+              copyNumber: 1,
+            ) ||
+        duplicateCopy02.id !=
+            BookInstanceCode.duplicateCopyId(
+              color: duplicateCopy02.color,
+              symbol: duplicateCopy02.symbol,
+              copyNumber: 2,
+            )) {
+      return null;
+    }
+    final colors = {
+      blockAFirst.color,
+      blockAMiddle.color,
+      blockALast.color,
+      duplicateCopy01.color,
+      blockBEnd.color,
+    };
+    if (colors.length != 5) {
+      return null;
+    }
+
+    return _T03TargetShape(
+      blockAFirst: blockAFirst,
+      blockAMiddle: blockAMiddle,
+      blockALast: blockALast,
+      duplicateCopy01: duplicateCopy01,
+      duplicateCopy02: duplicateCopy02,
+      blockBEnd: blockBEnd,
+    );
+  }
+
+  bool _matchesT02Clue({
+    required int index,
+    required Clue clue,
+    required _T02TargetShape shape,
+  }) {
+    switch (index) {
+      case 0:
+        return clue is BothEdgesClue &&
+            clue.tierIndex == 0 &&
+            clue.subject == BookColorSelector(color: shape.edgeColor) &&
+            clue.id ==
+                't02_c03_00_${BookCode.color(shape.edgeColor)}_both_edges';
+      case 1:
+        return clue is BetweenClue &&
+            clue.tierIndex == 0 &&
+            clue.subject == BookColorSelector(color: shape.duplicateColor) &&
+            clue.boundary == BookColorSelector(color: shape.edgeColor) &&
+            clue.id ==
+                't02_c06_01_${BookCode.color(shape.duplicateColor)}_between_${BookCode.color(shape.edgeColor)}';
+      case 2:
+        return clue is AdjacentClue &&
+            clue.tierIndex == 0 &&
+            clue.direction == AdjacentDirection.immediatelyRightOf &&
+            clue.subject == BookIdSelector(bookId: shape.fillerB.id) &&
+            clue.reference == BookIdSelector(bookId: shape.fillerA.id) &&
+            clue.id ==
+                't02_c05_02_${shape.fillerB.id}_immediately_right_of_${shape.fillerA.id}';
+      case 3:
+        return clue is RelativeOrderClue &&
+            clue.tierIndex == 0 &&
+            clue.relation == HorizontalRelation.leftOf &&
+            clue.subject == BookIdSelector(bookId: shape.edgeLeft.id) &&
+            clue.reference == BookIdSelector(bookId: shape.edgeRight.id) &&
+            clue.id ==
+                't02_c04_03_${shape.edgeLeft.id}_left_of_${shape.edgeRight.id}';
+      case 4:
+        return clue is RelativeOrderClue &&
+            clue.tierIndex == 0 &&
+            clue.relation == HorizontalRelation.leftOf &&
+            clue.subject == BookIdSelector(bookId: shape.fillerB.id) &&
+            clue.reference == BookColorSelector(color: shape.duplicateColor) &&
+            clue.id ==
+                't02_c04_04_${shape.fillerB.id}_left_of_${BookCode.color(shape.duplicateColor)}_group';
+      default:
+        return false;
+    }
+  }
+
+  bool _matchesT03Clue({
+    required int index,
+    required Clue clue,
+    required _T03TargetShape shape,
+  }) {
+    final duplicateColorCode = BookCode.color(shape.duplicateColor);
+    switch (index) {
+      case 0:
+        return clue is AdjacentClue &&
+            clue.tierIndex == 0 &&
+            clue.direction == AdjacentDirection.immediatelyRightOf &&
+            clue.subject == BookIdSelector(bookId: shape.blockAMiddle.id) &&
+            clue.reference == BookIdSelector(bookId: shape.blockAFirst.id) &&
+            clue.id ==
+                't03_c05_00_${shape.blockAMiddle.id}_immediately_right_of_${shape.blockAFirst.id}';
+      case 1:
+        return clue is AdjacentClue &&
+            clue.tierIndex == 0 &&
+            clue.direction == AdjacentDirection.immediatelyRightOf &&
+            clue.subject == BookIdSelector(bookId: shape.blockALast.id) &&
+            clue.reference == BookIdSelector(bookId: shape.blockAMiddle.id) &&
+            clue.id ==
+                't03_c05_01_${shape.blockALast.id}_immediately_right_of_${shape.blockAMiddle.id}';
+      case 2:
+        return clue is AdjacentClue &&
+            clue.tierIndex == 0 &&
+            clue.direction == AdjacentDirection.immediatelyRightOf &&
+            clue.subject == BookIdSelector(bookId: shape.blockBEnd.id) &&
+            clue.reference == BookColorSelector(color: shape.duplicateColor) &&
+            clue.id ==
+                't03_c05_02_${shape.blockBEnd.id}_immediately_right_of_${duplicateColorCode}_group';
+      case 3:
+        return clue is RelativeOrderClue &&
+            clue.tierIndex == 0 &&
+            clue.relation == HorizontalRelation.leftOf &&
+            clue.subject == BookIdSelector(bookId: shape.blockALast.id) &&
+            clue.reference == BookColorSelector(color: shape.duplicateColor) &&
+            clue.id ==
+                't03_c04_03_${shape.blockALast.id}_left_of_${duplicateColorCode}_group';
+      case 4:
+        return clue is RelativeOrderClue &&
+            clue.tierIndex == 0 &&
+            clue.relation == HorizontalRelation.leftOf &&
+            clue.subject == BookIdSelector(bookId: shape.blockAFirst.id) &&
+            clue.reference == BookIdSelector(bookId: shape.blockBEnd.id) &&
+            clue.id ==
+                't03_c04_04_${shape.blockAFirst.id}_left_of_${shape.blockBEnd.id}';
+      default:
+        return false;
+    }
+  }
+
+  bool _selectorCardinalityIsAllowed({
+    required PuzzleTemplateId templateId,
+    required Clue clue,
+    required BookSelector selector,
+    required int targetCount,
+    required int initialCount,
+  }) {
+    if (targetCount == 0 || initialCount == 0) {
+      return false;
+    }
+    switch (templateId) {
+      case PuzzleTemplateId.t01AnchorChain:
+        return targetCount == 1 && initialCount == 1;
+      case PuzzleTemplateId.t02EdgeSandwich:
+        if (selector is BookIdSelector) {
+          return targetCount == 1 && initialCount == 1;
+        }
+        if (clue is BothEdgesClue && identical(selector, clue.subject)) {
+          return targetCount == 2 && initialCount == 2;
+        }
+        if (clue is BetweenClue &&
+            (identical(selector, clue.subject) ||
+                identical(selector, clue.boundary))) {
+          return targetCount == 2 && initialCount == 2;
+        }
+        if (clue is RelativeOrderClue &&
+            identical(selector, clue.reference) &&
+            selector is BookColorSelector) {
+          return targetCount == 2 && initialCount == 2;
+        }
+        return false;
+      case PuzzleTemplateId.t03AdjacentBlocks:
+        if (selector is BookIdSelector) {
+          return targetCount == 1 && initialCount == 1;
+        }
+        if (clue is AdjacentClue &&
+            identical(selector, clue.reference) &&
+            selector is BookColorSelector) {
+          return targetCount == 2 && initialCount == 2;
+        }
+        if (clue is RelativeOrderClue &&
+            identical(selector, clue.reference) &&
+            selector is BookColorSelector) {
+          return targetCount == 2 && initialCount == 2;
+        }
+        return false;
+    }
+  }
+
+  bool _hasSameTemplateOrder(GeneratedStage stage) {
+    return switch (stage.templateId) {
+      PuzzleTemplateId.t01AnchorChain => permutationAnalyzer.hasSameBookOrder(
+        first: stage.targetPlacements,
+        second: stage.initialPlacements,
+      ),
+      PuzzleTemplateId.t02EdgeSandwich =>
+        permutationAnalyzer.hasSameVisualOrder(
+          first: stage.targetPlacements,
+          second: stage.initialPlacements,
+        ),
+      PuzzleTemplateId.t03AdjacentBlocks =>
+        permutationAnalyzer.hasSameVisualOrder(
+          first: stage.targetPlacements,
+          second: stage.initialPlacements,
+        ),
+    };
+  }
+
+  StageValidationIssueCode _minimumDistanceIssueCode(
+    PuzzleTemplateId templateId,
+  ) {
+    return switch (templateId) {
+      PuzzleTemplateId.t01AnchorChain =>
+        StageValidationIssueCode.minimumSwapDistanceMismatch,
+      PuzzleTemplateId.t02EdgeSandwich =>
+        StageValidationIssueCode.minimumVisualSwapDistanceMismatch,
+      PuzzleTemplateId.t03AdjacentBlocks =>
+        StageValidationIssueCode.minimumVisualSwapDistanceMismatch,
+    };
+  }
+
+  int _expectedScrambleSeed(int stageSeed, PuzzleTemplateId templateId) {
+    final salt = switch (templateId) {
+      PuzzleTemplateId.t01AnchorChain => GeneratorConfig.t01ScrambleSalt,
+      PuzzleTemplateId.t02EdgeSandwich => GeneratorConfig.t02ScrambleSalt,
+      PuzzleTemplateId.t03AdjacentBlocks => GeneratorConfig.t03ScrambleSalt,
+    };
+    final value = (stageSeed ^ salt) & GeneratorConfig.uint32Mask;
     if (value == 0) {
       return GeneratorConfig.zeroSeedFallback;
     }
@@ -675,4 +1235,46 @@ class GeneratedStageValidator {
       StageValidationIssue(code: code, message: message, relatedId: relatedId),
     );
   }
+}
+
+class _T02TargetShape {
+  const _T02TargetShape({
+    required this.edgeLeft,
+    required this.fillerA,
+    required this.fillerB,
+    required this.duplicateCopy01,
+    required this.duplicateCopy02,
+    required this.edgeRight,
+  });
+
+  final Book edgeLeft;
+  final Book fillerA;
+  final Book fillerB;
+  final Book duplicateCopy01;
+  final Book duplicateCopy02;
+  final Book edgeRight;
+
+  BookColor get edgeColor => edgeLeft.color;
+
+  BookColor get duplicateColor => duplicateCopy01.color;
+}
+
+class _T03TargetShape {
+  const _T03TargetShape({
+    required this.blockAFirst,
+    required this.blockAMiddle,
+    required this.blockALast,
+    required this.duplicateCopy01,
+    required this.duplicateCopy02,
+    required this.blockBEnd,
+  });
+
+  final Book blockAFirst;
+  final Book blockAMiddle;
+  final Book blockALast;
+  final Book duplicateCopy01;
+  final Book duplicateCopy02;
+  final Book blockBEnd;
+
+  BookColor get duplicateColor => duplicateCopy01.color;
 }

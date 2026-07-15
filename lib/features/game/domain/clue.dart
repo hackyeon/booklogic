@@ -51,6 +51,39 @@ final class EdgePositionClue extends Clue {
   }
 }
 
+final class BothEdgesClue extends Clue {
+  const BothEdgesClue({
+    required super.id,
+    required this.subject,
+    required this.tierIndex,
+  }) : assert(tierIndex >= 0);
+
+  final BookSelector subject;
+  final int tierIndex;
+
+  @override
+  ClueType get type => ClueType.bothEdges;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is BothEdgesClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            subject == other.subject &&
+            tierIndex == other.tierIndex;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, subject, tierIndex);
+
+  @override
+  String toString() {
+    return 'BothEdgesClue(id: $id, subject: $subject, '
+        'tierIndex: $tierIndex)';
+  }
+}
+
 final class RelativeOrderClue extends Clue {
   const RelativeOrderClue({
     required super.id,
@@ -96,6 +129,44 @@ final class RelativeOrderClue extends Clue {
   String toString() {
     return 'RelativeOrderClue(id: $id, subject: $subject, '
         'reference: $reference, tierIndex: $tierIndex, relation: $relation)';
+  }
+}
+
+final class BetweenClue extends Clue {
+  const BetweenClue({
+    required super.id,
+    required this.subject,
+    required this.boundary,
+    required this.tierIndex,
+  }) : assert(tierIndex >= 0);
+
+  final BookSelector subject;
+  final BookSelector boundary;
+  final int tierIndex;
+
+  @override
+  ClueType get type => ClueType.between;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is BetweenClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            subject == other.subject &&
+            boundary == other.boundary &&
+            tierIndex == other.tierIndex;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, id, subject, boundary, tierIndex);
+  }
+
+  @override
+  String toString() {
+    return 'BetweenClue(id: $id, subject: $subject, boundary: $boundary, '
+        'tierIndex: $tierIndex)';
   }
 }
 
