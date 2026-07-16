@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:booklogic/core/persistence/keys/persistence_keys.dart';
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/shared_preferences_game_progress_store.dart';
 
@@ -11,13 +12,13 @@ void main() {
     });
 
     test('returns null when no progress is saved', () async {
-      const store = SharedPreferencesGameProgressStore();
+      final store = SharedPreferencesGameProgressStore();
 
       expect(await store.read(), isNull);
     });
 
-    test('writes and reads a single JSON string with the stable key', () async {
-      const store = SharedPreferencesGameProgressStore();
+    test('writes and reads a resilient primary document', () async {
+      final store = SharedPreferencesGameProgressStore();
       final progress = GameProgress(
         schemaVersion: 1,
         currentLevel: 2,
@@ -29,36 +30,60 @@ void main() {
 
       final preferences = await SharedPreferences.getInstance();
       expect(preferences.getKeys(), {
-        SharedPreferencesGameProgressStore.storageKey,
+        PersistenceKeys.gameProgress.primary,
+        PersistenceKeys.gameProgress.commitRevision,
       });
       expect(
-        preferences.getString(SharedPreferencesGameProgressStore.storageKey),
-        '{"schemaVersion":1,"currentLevel":2,"highestUnlockedLevel":2,"generatorVersion":1}',
+        preferences.getInt(PersistenceKeys.gameProgress.commitRevision),
+        1,
+      );
+      expect(
+        preferences.getString(PersistenceKeys.gameProgress.primary),
+        contains('"currentLevel":2'),
       );
       expect(await store.read(), progress);
     });
 
-    test('rejects malformed stored data', () async {
-      const store = SharedPreferencesGameProgressStore();
+    test('ignores malformed legacy data and keeps the app usable', () async {
+      final store = SharedPreferencesGameProgressStore();
       final preferences = await SharedPreferences.getInstance();
 
       await preferences.setString(
         SharedPreferencesGameProgressStore.storageKey,
         '{ invalid json',
       );
-      await expectLater(store.read(), throwsFormatException);
+      expect(await store.read(), isNull);
+      expect(await store.read(), GameProgress.initial(generatorVersion: 1));
+    });
+
+    test('migrates legacy JSON without deleting the legacy key', () async {
+      final store = SharedPreferencesGameProgressStore();
+      final preferences = await SharedPreferences.getInstance();
+      final legacyProgress = GameProgress(
+        schemaVersion: 1,
+        currentLevel: 201,
+        highestUnlockedLevel: 201,
+        generatorVersion: 2,
+      );
 
       await preferences.setString(
         SharedPreferencesGameProgressStore.storageKey,
-        '[1, 2, 3]',
+        legacyProgress.encode(),
       );
-      await expectLater(store.read(), throwsFormatException);
 
-      await preferences.setString(
-        SharedPreferencesGameProgressStore.storageKey,
-        '{"schemaVersion":1,"currentLevel":"2","highestUnlockedLevel":2,"generatorVersion":1}',
+      expect(await store.read(), legacyProgress);
+      expect(
+        preferences.getString(SharedPreferencesGameProgressStore.storageKey),
+        legacyProgress.encode(),
       );
-      await expectLater(store.read(), throwsFormatException);
+      expect(
+        preferences.getInt(PersistenceKeys.gameProgress.commitRevision),
+        1,
+      );
+      expect(
+        preferences.getString(PersistenceKeys.gameProgress.primary),
+        isNotNull,
+      );
     });
   });
 }

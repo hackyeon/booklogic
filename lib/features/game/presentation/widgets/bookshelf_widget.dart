@@ -5,6 +5,8 @@ import '../../../../core/constants/app_durations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../application/active_swap.dart';
 import '../../domain/book_placement.dart';
+import '../../tutorial/presentation/tutorial_target_registry.dart';
+import '../../tutorial/presentation/tutorial_target_widget.dart';
 import '../layout/bookshelf_layout_metrics.dart';
 import 'book_widget.dart';
 
@@ -23,6 +25,8 @@ class BookshelfWidget extends StatelessWidget {
     required this.isCleared,
     required this.clearActiveBookId,
     required this.isShelfGlowing,
+    this.clueHighlightedBookIds = const <String>{},
+    this.tutorialTargetRegistry,
     super.key,
   });
 
@@ -39,6 +43,8 @@ class BookshelfWidget extends StatelessWidget {
   final bool isCleared;
   final String? clearActiveBookId;
   final bool isShelfGlowing;
+  final Set<String> clueHighlightedBookIds;
+  final TutorialTargetRegistry? tutorialTargetRegistry;
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +116,10 @@ class BookshelfWidget extends StatelessWidget {
                         metrics: metrics,
                         selectedBookId: selectedBookId,
                         clearActiveBookId: clearActiveBookId,
+                        isClueHighlighted: clueHighlightedBookIds.contains(
+                          placement.book.id,
+                        ),
+                        tutorialTargetRegistry: tutorialTargetRegistry,
                         onBookTap: onBookTap,
                       ),
                   ],
@@ -304,19 +314,37 @@ class _PositionedBook extends StatelessWidget {
     required this.metrics,
     required this.selectedBookId,
     required this.clearActiveBookId,
+    required this.isClueHighlighted,
     required this.onBookTap,
+    this.tutorialTargetRegistry,
   });
 
   final BookPlacement placement;
   final BookshelfLayoutMetrics metrics;
   final String? selectedBookId;
   final String? clearActiveBookId;
+  final bool isClueHighlighted;
   final ValueChanged<String> onBookTap;
+  final TutorialTargetRegistry? tutorialTargetRegistry;
 
   @override
   Widget build(BuildContext context) {
     final bookRect = metrics.bookRectFor(placement.position);
     final book = placement.book;
+    final bookWidget = BookWidget(
+      key: ValueKey(book.id),
+      book: book,
+      width: bookRect.width,
+      height: bookRect.height,
+      isSelected: book.id == selectedBookId,
+      isClearActive: book.id == clearActiveBookId,
+      isClueHighlighted: isClueHighlighted,
+      semanticsValue:
+          '${placement.position.tierIndex + 1}단 ${placement.position.slotIndex + 1}번째 칸',
+      onTap: () => onBookTap(book.id),
+    );
+    final registry = tutorialTargetRegistry;
+
     return AnimatedPositioned(
       key: ValueKey('positioned_${book.id}'),
       duration: AppDurations.bookSwap,
@@ -325,17 +353,13 @@ class _PositionedBook extends StatelessWidget {
       top: bookRect.top,
       width: bookRect.width,
       height: bookRect.height,
-      child: BookWidget(
-        key: ValueKey(book.id),
-        book: book,
-        width: bookRect.width,
-        height: bookRect.height,
-        isSelected: book.id == selectedBookId,
-        isClearActive: book.id == clearActiveBookId,
-        semanticsValue:
-            '${placement.position.tierIndex + 1}단 ${placement.position.slotIndex + 1}번째 칸',
-        onTap: () => onBookTap(book.id),
-      ),
+      child: registry == null
+          ? bookWidget
+          : TutorialTargetWidget(
+              registry: registry,
+              targetId: 'book:${book.id}',
+              child: bookWidget,
+            ),
     );
   }
 }

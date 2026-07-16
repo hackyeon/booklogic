@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_store.dart';
+import 'package:booklogic/core/persistence/domain/persistence_load_report.dart';
 
 class FakeGameProgressStore implements GameProgressStore {
   FakeGameProgressStore({
@@ -20,10 +21,17 @@ class FakeGameProgressStore implements GameProgressStore {
   final List<Object?> _writeErrors;
   final writes = <GameProgress>[];
   int readCount = 0;
+  PersistenceLoadReport? _lastLoadReport;
 
   int get writeCount => writes.length;
 
   GameProgress? get lastWrite => writes.isEmpty ? null : writes.last;
+
+  @override
+  PersistenceLoadReport? get lastLoadReport => _lastLoadReport;
+
+  @override
+  bool get canWrite => true;
 
   @override
   Future<GameProgress?> read() async {
@@ -54,6 +62,9 @@ class FakeGameProgressStore implements GameProgressStore {
     }
     this.progress = progress;
   }
+
+  @override
+  Future<void> flush() async {}
 }
 
 Never _throwFakeError(Object error) {

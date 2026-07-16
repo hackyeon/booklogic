@@ -5,6 +5,8 @@ import '../../../../core/constants/app_strings.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/book.dart';
 import '../../domain/clue.dart';
+import '../../tutorial/presentation/tutorial_target_registry.dart';
+import '../../tutorial/presentation/tutorial_target_widget.dart';
 import '../formatters/clue_text_formatter.dart';
 import 'clue_card_widget.dart';
 
@@ -13,6 +15,9 @@ class CluePanelWidget extends StatelessWidget {
     required this.clues,
     required this.books,
     required this.satisfiedClueIds,
+    this.highlightedClueId,
+    this.onClueTap,
+    this.tutorialTargetRegistry,
     this.formatter = const ClueTextFormatter(),
     super.key,
   });
@@ -20,6 +25,9 @@ class CluePanelWidget extends StatelessWidget {
   final List<Clue> clues;
   final List<Book> books;
   final Set<String> satisfiedClueIds;
+  final String? highlightedClueId;
+  final ValueChanged<String>? onClueTap;
+  final TutorialTargetRegistry? tutorialTargetRegistry;
   final ClueTextFormatter formatter;
 
   @override
@@ -62,17 +70,32 @@ class CluePanelWidget extends StatelessWidget {
                 for (final indexedClue in clues.indexed) ...[
                   if (indexedClue.$1 > 0)
                     const SizedBox(height: AppDimensions.smallSpacing),
-                  ClueCardWidget(
-                    clue: indexedClue.$2,
-                    text: formatter.format(clue: indexedClue.$2, books: books),
-                    displayIndex: indexedClue.$1 + 1,
-                    isSatisfied: satisfiedClueIds.contains(indexedClue.$2.id),
-                  ),
+                  _buildClueCard(indexedClue.$1, indexedClue.$2),
                 ],
               ],
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildClueCard(int index, Clue clue) {
+    final card = ClueCardWidget(
+      clue: clue,
+      text: formatter.format(clue: clue, books: books),
+      displayIndex: index + 1,
+      isSatisfied: satisfiedClueIds.contains(clue.id),
+      isHighlighted: highlightedClueId == clue.id,
+      onTap: onClueTap == null ? null : () => onClueTap!(clue.id),
+    );
+    final registry = tutorialTargetRegistry;
+    if (registry == null) {
+      return card;
+    }
+    return TutorialTargetWidget(
+      registry: registry,
+      targetId: 'clue:${clue.id}',
+      child: card,
     );
   }
 }

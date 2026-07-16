@@ -7,6 +7,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:booklogic/app/app.dart';
 import 'package:booklogic/core/constants/app_durations.dart';
 import 'package:booklogic/core/constants/app_strings.dart';
+import 'package:booklogic/core/feedback/application/app_feedback_settings_controller.dart';
+import 'package:booklogic/core/feedback/domain/app_feedback_settings.dart';
+import 'package:booklogic/core/feedback/data/app_feedback_settings_store.dart';
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_controller.dart';
 import 'package:booklogic/core/progress/game_progress_store.dart';
@@ -36,9 +39,15 @@ import 'package:booklogic/features/game/presentation/widgets/bookshelf_widget.da
 import 'package:booklogic/features/game/presentation/widgets/book_widget.dart';
 import 'package:booklogic/features/game/presentation/widgets/clear_result_overlay.dart';
 import 'package:booklogic/features/game/presentation/widgets/clue_card_widget.dart';
+import 'package:booklogic/features/game/tutorial/application/learning_progress_store.dart';
+import 'package:booklogic/features/game/tutorial/domain/learning_progress.dart';
 import 'package:booklogic/features/settings/presentation/settings_screen.dart';
 
 import 'helpers/fake_game_progress_store.dart';
+import 'helpers/fake_app_feedback_settings_store.dart';
+import 'helpers/fake_game_haptic_player.dart';
+import 'helpers/fake_game_sound_player.dart';
+import 'helpers/fake_learning_progress_store.dart';
 
 void main() {
   testWidgets('shows home screen and opens game screen', (tester) async {
@@ -63,7 +72,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.sound), findsOneWidget);
-    expect(find.text(AppStrings.music), findsOneWidget);
+    expect(find.text(AppStrings.music), findsNothing);
     expect(find.text(AppStrings.haptic), findsOneWidget);
   });
 
@@ -137,7 +146,12 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const BookLogicApp(progressStore: SharedPreferencesGameProgressStore()),
+      BookLogicApp(
+        progressStore: SharedPreferencesGameProgressStore(),
+        learningProgressStore: FakeLearningProgressStore(
+          progress: LearningProgress(tutorialCompleted: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -169,7 +183,12 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const BookLogicApp(progressStore: SharedPreferencesGameProgressStore()),
+      BookLogicApp(
+        progressStore: SharedPreferencesGameProgressStore(),
+        learningProgressStore: FakeLearningProgressStore(
+          progress: LearningProgress(tutorialCompleted: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -203,7 +222,12 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const BookLogicApp(progressStore: SharedPreferencesGameProgressStore()),
+      BookLogicApp(
+        progressStore: SharedPreferencesGameProgressStore(),
+        learningProgressStore: FakeLearningProgressStore(
+          progress: LearningProgress(tutorialCompleted: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
@@ -232,11 +256,16 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const BookLogicApp(progressStore: SharedPreferencesGameProgressStore()),
+      BookLogicApp(
+        progressStore: SharedPreferencesGameProgressStore(),
+        learningProgressStore: FakeLearningProgressStore(
+          progress: LearningProgress(tutorialCompleted: true),
+        ),
+      ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('home_progress_load_warning')), findsOneWidget);
+    expect(find.byKey(const Key('home_progress_load_warning')), findsNothing);
     expect(find.text('계속하기 · Level 1'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('home_continue_button')));
@@ -3384,7 +3413,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        routes: {'/settings': (_) => const SettingsScreen()},
+        routes: {'/settings': (_) => _testSettingsScreen()},
         home: _gameScreen(stageGenerator: generator),
       ),
     );
@@ -3792,7 +3821,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        routes: {'/settings': (_) => const SettingsScreen()},
+        routes: {'/settings': (_) => _testSettingsScreen()},
         home: _gameScreen(stageGenerator: generator),
       ),
     );
@@ -4143,8 +4172,42 @@ List<String> _stageSatisfiedClueIdsAfterReverseSwaps({
       .toList(growable: false);
 }
 
-BookLogicApp _app({GameProgressStore? progressStore}) {
-  return BookLogicApp(progressStore: progressStore ?? FakeGameProgressStore());
+BookLogicApp _app({
+  GameProgressStore? progressStore,
+  LearningProgressStore? learningProgressStore,
+  AppFeedbackSettingsStore? feedbackSettingsStore,
+}) {
+  final soundPlayer = FakeGameSoundPlayer();
+  final hapticPlayer = FakeGameHapticPlayer();
+  return BookLogicApp(
+    progressStore: progressStore ?? FakeGameProgressStore(),
+    learningProgressStore:
+        learningProgressStore ??
+        FakeLearningProgressStore(
+          progress: LearningProgress(tutorialCompleted: true),
+        ),
+    feedbackSettingsStore:
+        feedbackSettingsStore ??
+        FakeAppFeedbackSettingsStore(settings: AppFeedbackSettings.defaults),
+    soundPlayer: soundPlayer,
+    hapticPlayer: hapticPlayer,
+  );
+}
+
+SettingsScreen _testSettingsScreen({
+  AppFeedbackSettings settings = AppFeedbackSettings.defaults,
+  FakeGameSoundPlayer? soundPlayer,
+  FakeGameHapticPlayer? hapticPlayer,
+}) {
+  final controller = AppFeedbackSettingsController(
+    store: FakeAppFeedbackSettingsStore(settings: settings),
+  );
+  controller.initialize();
+  return SettingsScreen(
+    feedbackSettingsController: controller,
+    soundPlayer: soundPlayer ?? FakeGameSoundPlayer(),
+    hapticPlayer: hapticPlayer ?? FakeGameHapticPlayer(),
+  );
 }
 
 GameScreen _gameScreen({

@@ -3,6 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/feedback/domain/game_feedback_event.dart';
 import '../../../core/constants/app_durations.dart';
 import 'active_swap.dart';
 import 'game_status.dart';
@@ -12,6 +13,7 @@ import '../domain/clue.dart';
 import '../domain/clue_evaluator.dart';
 import '../generator/generated_stage.dart';
 import '../generator/generator_config.dart';
+import '../tutorial/application/clue_book_reference_resolver.dart';
 
 class GameController extends ChangeNotifier {
   GameController({
@@ -20,29 +22,37 @@ class GameController extends ChangeNotifier {
     List<Clue>? clues,
     int level = 1,
     Duration swapDuration = AppDurations.bookSwap,
+    Duration clueBookHighlightDuration = AppDurations.clueBookHighlight,
     Duration clueCompletionDelay = AppDurations.clueCompletionDelay,
     Duration clearBookStepDuration = AppDurations.clearBookStep,
     Duration clearFinalGlowDuration = AppDurations.clearFinalGlow,
     ClueEvaluator clueEvaluator = const ClueEvaluator(),
+    ClueBookReferenceResolver clueBookReferenceResolver =
+        const ClueBookReferenceResolver(),
   }) : this._(
          initialPlacements: initialPlacements,
          clues: _resolveClues(initialClues: initialClues, clues: clues),
          level: level,
          generatedStage: null,
          swapDuration: swapDuration,
+         clueBookHighlightDuration: clueBookHighlightDuration,
          clueCompletionDelay: clueCompletionDelay,
          clearBookStepDuration: clearBookStepDuration,
          clearFinalGlowDuration: clearFinalGlowDuration,
          clueEvaluator: clueEvaluator,
+         clueBookReferenceResolver: clueBookReferenceResolver,
        );
 
   factory GameController.fromGeneratedStage({
     required GeneratedStage stage,
     ClueEvaluator clueEvaluator = const ClueEvaluator(),
     Duration swapDuration = AppDurations.bookSwap,
+    Duration clueBookHighlightDuration = AppDurations.clueBookHighlight,
     Duration clueCompletionDelay = AppDurations.clueCompletionDelay,
     Duration clearBookStepDuration = AppDurations.clearBookStep,
     Duration clearFinalGlowDuration = AppDurations.clearFinalGlow,
+    ClueBookReferenceResolver clueBookReferenceResolver =
+        const ClueBookReferenceResolver(),
   }) {
     return GameController._(
       initialPlacements: stage.initialPlacements,
@@ -51,9 +61,11 @@ class GameController extends ChangeNotifier {
       generatedStage: stage,
       clueEvaluator: clueEvaluator,
       swapDuration: swapDuration,
+      clueBookHighlightDuration: clueBookHighlightDuration,
       clueCompletionDelay: clueCompletionDelay,
       clearBookStepDuration: clearBookStepDuration,
       clearFinalGlowDuration: clearFinalGlowDuration,
+      clueBookReferenceResolver: clueBookReferenceResolver,
     );
   }
 
@@ -63,10 +75,12 @@ class GameController extends ChangeNotifier {
     required int level,
     required GeneratedStage? generatedStage,
     required this.swapDuration,
+    required this.clueBookHighlightDuration,
     required this.clueCompletionDelay,
     required this.clearBookStepDuration,
     required this.clearFinalGlowDuration,
     required ClueEvaluator clueEvaluator,
+    required ClueBookReferenceResolver clueBookReferenceResolver,
   }) : _level = _validateLevel(level),
        _generatedStage = generatedStage,
        _layout = _validatePlacementLayout(
@@ -79,6 +93,7 @@ class GameController extends ChangeNotifier {
        _placements = List<BookPlacement>.of(initialPlacements),
        _clues = List<Clue>.unmodifiable(List<Clue>.of(clues)),
        _clueEvaluator = clueEvaluator,
+       _clueBookReferenceResolver = clueBookReferenceResolver,
        _satisfiedClueIds = Set<String>.of(
          clueEvaluator.evaluateAll(clues: clues, placements: initialPlacements),
        );
@@ -90,7 +105,9 @@ class GameController extends ChangeNotifier {
   List<BookPlacement> _placements;
   final List<Clue> _clues;
   final ClueEvaluator _clueEvaluator;
+  final ClueBookReferenceResolver _clueBookReferenceResolver;
   final Duration swapDuration;
+  final Duration clueBookHighlightDuration;
   final Duration clueCompletionDelay;
   final Duration clearBookStepDuration;
   final Duration clearFinalGlowDuration;
@@ -103,6 +120,11 @@ class GameController extends ChangeNotifier {
   Timer? _clearStartTimer;
   Timer? _clearStepTimer;
   Timer? _clearFinishTimer;
+  Timer? _clueHighlightTimer;
+  final StreamController<GameFeedbackEvent> _feedbackEventController =
+      StreamController<GameFeedbackEvent>.broadcast(sync: true);
+  String? _highlightedClueId;
+  Set<String> _clueHighlightedBookIds = <String>{};
   bool _hasClearTriggered = false;
   int _clearStepIndex = -1;
   int _boardRevision = 0;
@@ -118,6 +140,10 @@ class GameController extends ChangeNotifier {
 
   UnmodifiableListView<Clue> get clues {
     return UnmodifiableListView(_clues);
+  }
+
+  Stream<GameFeedbackEvent> get feedbackEvents {
+    return _feedbackEventController.stream;
   }
 
   GeneratedStage? get generatedStage => _generatedStage;
@@ -144,6 +170,12 @@ class GameController extends ChangeNotifier {
 
   Set<String> get satisfiedClueIds {
     return UnmodifiableSetView(_satisfiedClueIds);
+  }
+
+  String? get highlightedClueId => _highlightedClueId;
+
+  Set<String> get clueHighlightedBookIds {
+    return UnmodifiableSetView(_clueHighlightedBookIds);
   }
 
   int get satisfiedClueCount => _satisfiedClueIds.length;
@@ -242,6 +274,12 @@ class GameController extends ChangeNotifier {
     final selectedBookId = _selectedBookId;
     if (selectedBookId == null) {
       _selectedBookId = bookId;
+      _emitFeedbackEvent(
+        GameFeedbackEvent(
+          type: GameFeedbackEventType.bookSelected,
+          bookId: bookId,
+        ),
+      );
       notifyListeners();
       return;
     }
@@ -263,6 +301,7 @@ class GameController extends ChangeNotifier {
     final tappedPlacement = _placements[tappedIndex];
 
     if (!_isVisuallyIdentical(selectedPlacement.book, tappedPlacement.book)) {
+      _clearClueHighlight(notify: false);
       final selectedPosition = selectedPlacement.position;
       final tappedPosition = tappedPlacement.position;
       _placements[selectedIndex] = selectedPlacement.copyWith(
@@ -275,6 +314,9 @@ class GameController extends ChangeNotifier {
       _activeSwap = ActiveSwap(
         firstBookId: selectedPlacement.book.id,
         secondBookId: tappedPlacement.book.id,
+      );
+      _emitFeedbackEvent(
+        GameFeedbackEvent(type: GameFeedbackEventType.booksSwapped),
       );
       _status = GameStatus.animating;
       _startSwapTimer();
@@ -299,6 +341,7 @@ class GameController extends ChangeNotifier {
     }
 
     _cancelAllGameTimers();
+    _clearClueHighlight(notify: false);
     _placements = List<BookPlacement>.of(_initialPlacements);
     _selectedBookId = null;
     _moveCount = 0;
@@ -317,6 +360,44 @@ class GameController extends ChangeNotifier {
     return _selectedBookId == bookId;
   }
 
+  void highlightClue(String clueId) {
+    if (!canAcceptGameInput) {
+      return;
+    }
+    Clue? clue;
+    for (final candidate in _clues) {
+      if (candidate.id == clueId) {
+        clue = candidate;
+        break;
+      }
+    }
+    if (clue == null) {
+      return;
+    }
+
+    _cancelClueHighlightTimer();
+    _highlightedClueId = clueId;
+    _clueHighlightedBookIds = Set<String>.of(
+      _clueBookReferenceResolver.resolveBookIds(
+        clue: clue,
+        placements: _placements,
+      ),
+    );
+    notifyListeners();
+
+    _clueHighlightTimer = Timer(clueBookHighlightDuration, () {
+      _clueHighlightTimer = null;
+      if (_isDisposed) {
+        return;
+      }
+      _clearClueHighlight();
+    });
+  }
+
+  void clearClueHighlight() {
+    _clearClueHighlight();
+  }
+
   int _indexOfBook(String bookId) {
     return _placements.indexWhere((placement) => placement.book.id == bookId);
   }
@@ -332,18 +413,28 @@ class GameController extends ChangeNotifier {
       if (_isDisposed) {
         return;
       }
-      _satisfiedClueIds = Set<String>.of(
+      final previousSatisfiedClueIds = Set<String>.of(_satisfiedClueIds);
+      final nextSatisfiedClueIds = Set<String>.of(
         _clueEvaluator.evaluateAll(clues: _clues, placements: _placements),
       );
+      _satisfiedClueIds = nextSatisfiedClueIds;
       _activeSwap = null;
       if (_shouldStartClear()) {
+        _clearClueHighlight(notify: false);
         _hasClearTriggered = true;
         _clearStepIndex = -1;
         _status = GameStatus.clearing;
+        _emitFeedbackEvent(
+          GameFeedbackEvent(type: GameFeedbackEventType.stageCleared),
+        );
         notifyListeners();
         _startClearTimers();
         return;
       }
+      _emitNewlySatisfiedClues(
+        previousSatisfiedClueIds: previousSatisfiedClueIds,
+        nextSatisfiedClueIds: nextSatisfiedClueIds,
+      );
       _status = GameStatus.idle;
       notifyListeners();
     });
@@ -428,9 +519,27 @@ class GameController extends ChangeNotifier {
     _clearFinishTimer = null;
   }
 
+  void _cancelClueHighlightTimer() {
+    _clueHighlightTimer?.cancel();
+    _clueHighlightTimer = null;
+  }
+
   void _cancelAllGameTimers() {
     _cancelSwapTimer();
     _cancelClearTimers();
+    _cancelClueHighlightTimer();
+  }
+
+  void _clearClueHighlight({bool notify = true}) {
+    _cancelClueHighlightTimer();
+    if (_highlightedClueId == null && _clueHighlightedBookIds.isEmpty) {
+      return;
+    }
+    _highlightedClueId = null;
+    _clueHighlightedBookIds = <String>{};
+    if (notify && !_isDisposed) {
+      notifyListeners();
+    }
   }
 
   List<BookPlacement> _sortedPlacementsByPosition() {
@@ -445,10 +554,42 @@ class GameController extends ChangeNotifier {
     });
   }
 
+  void _emitNewlySatisfiedClues({
+    required Set<String> previousSatisfiedClueIds,
+    required Set<String> nextSatisfiedClueIds,
+  }) {
+    final newlySatisfiedClueIds = <String>[];
+    for (final clue in _clues) {
+      if (nextSatisfiedClueIds.contains(clue.id) &&
+          !previousSatisfiedClueIds.contains(clue.id)) {
+        newlySatisfiedClueIds.add(clue.id);
+      }
+    }
+    if (newlySatisfiedClueIds.isEmpty) {
+      return;
+    }
+    _emitFeedbackEvent(
+      GameFeedbackEvent(
+        type: GameFeedbackEventType.cluesNewlySatisfied,
+        clueIds: newlySatisfiedClueIds,
+      ),
+    );
+  }
+
+  void _emitFeedbackEvent(GameFeedbackEvent event) {
+    if (_isDisposed || _feedbackEventController.isClosed) {
+      return;
+    }
+    _feedbackEventController.add(event);
+  }
+
   @override
   void dispose() {
     _isDisposed = true;
     _cancelAllGameTimers();
+    _highlightedClueId = null;
+    _clueHighlightedBookIds = <String>{};
+    _feedbackEventController.close();
     super.dispose();
   }
 }

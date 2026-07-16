@@ -3,17 +3,53 @@ import 'package:flutter/material.dart';
 import '../../../app/app_routes.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/persistence/application/persistence_health_controller.dart';
 import '../../../core/progress/game_progress_controller.dart';
 import '../../../core/theme/app_colors.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({required this.progressController, super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({
+    required this.progressController,
+    this.persistenceHealthController,
+    super.key,
+  });
 
   final GameProgressController progressController;
+  final PersistenceHealthController? persistenceHealthController;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    widget.persistenceHealthController?.addListener(_handleHealthChanged);
+  }
+
+  @override
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.persistenceHealthController !=
+        widget.persistenceHealthController) {
+      oldWidget.persistenceHealthController?.removeListener(
+        _handleHealthChanged,
+      );
+      widget.persistenceHealthController?.addListener(_handleHealthChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.persistenceHealthController?.removeListener(_handleHealthChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    _schedulePersistenceNotice();
 
     return Scaffold(
       body: SafeArea(
@@ -41,9 +77,10 @@ class HomeScreen extends StatelessWidget {
                 animation: progressController,
                 builder: (context, _) {
                   final isLoading =
-                      progressController.status == GameProgressStatus.initial ||
-                      progressController.isLoading;
-                  final level = progressController.currentLevel;
+                      widget.progressController.status ==
+                          GameProgressStatus.initial ||
+                      widget.progressController.isLoading;
+                  final level = widget.progressController.currentLevel;
                   final continueLabel = '계속하기 · Level $level';
 
                   return Column(
@@ -61,7 +98,7 @@ class HomeScreen extends StatelessWidget {
                         const SizedBox(height: AppDimensions.smallSpacing),
                       ],
                       if (!isLoading &&
-                          progressController.lastError != null) ...[
+                          widget.progressController.lastError != null) ...[
                         const Text(
                           AppStrings.progressLoadWarning,
                           key: Key('home_progress_load_warning'),
@@ -102,6 +139,32 @@ class HomeScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  GameProgressController get progressController => widget.progressController;
+
+  void _handleHealthChanged() {
+    _schedulePersistenceNotice();
+  }
+
+  void _schedulePersistenceNotice() {
+    final healthController = widget.persistenceHealthController;
+    if (healthController == null) {
+      return;
+    }
+    final message = healthController.noticeMessage;
+    if (message == null) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || healthController.noticeMessage == null) {
+        return;
+      }
+      healthController.consumeNotice();
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(message)));
+    });
   }
 }
 

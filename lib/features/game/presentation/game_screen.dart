@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../app/app_routes.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/feedback/application/app_feedback_settings_controller.dart';
+import '../../../core/feedback/application/game_feedback_coordinator.dart';
+import '../../../core/feedback/haptic/game_haptic_player.dart';
+import '../../../core/feedback/sound/game_sound_player.dart';
 import '../../../core/progress/game_progress_controller.dart';
 import '../../../core/theme/app_colors.dart';
 import '../application/game_controller.dart';
@@ -10,10 +16,19 @@ import '../application/game_status.dart';
 import '../domain/book.dart';
 import '../domain/book_placement.dart';
 import '../generator/generator_config.dart';
+import '../generator/generated_stage.dart';
 import '../generator/generator_version_policy.dart';
 import '../generator/stage_generation_exception.dart';
 import '../generator/stage_generator.dart';
+import '../tutorial/application/game_tutorial_controller.dart';
+import '../tutorial/application/learning_progress_controller.dart';
+import '../tutorial/data/shared_preferences_learning_progress_store.dart';
+import '../tutorial/domain/rule_introduction.dart';
+import '../tutorial/presentation/rule_introduction_overlay.dart';
+import '../tutorial/presentation/tutorial_coach_mark_overlay.dart';
+import '../tutorial/presentation/tutorial_target_registry.dart';
 import 'formatters/book_label_formatter.dart';
+import 'formatters/clue_text_formatter.dart';
 import 'widgets/bookshelf_widget.dart';
 import 'widgets/clue_panel_widget.dart';
 import 'widgets/clear_result_overlay.dart';
@@ -26,6 +41,11 @@ class GameScreen extends StatefulWidget {
     this.generatorVersion = GeneratorConfig.currentVersion,
     this.stageGenerator = const StageGenerator(),
     this.generatorVersionPolicy = const GeneratorVersionPolicy(),
+    this.learningProgressController,
+    this.feedbackSettingsController,
+    this.soundPlayer,
+    this.hapticPlayer,
+    this.enableTutorial = false,
     super.key,
   });
 
@@ -34,6 +54,11 @@ class GameScreen extends StatefulWidget {
   final int generatorVersion;
   final StageGenerator stageGenerator;
   final GeneratorVersionPolicy generatorVersionPolicy;
+  final LearningProgressController? learningProgressController;
+  final AppFeedbackSettingsController? feedbackSettingsController;
+  final GameSoundPlayer? soundPlayer;
+  final GameHapticPlayer? hapticPlayer;
+  final bool enableTutorial;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -41,6 +66,10 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
   GameController? _controller;
+  late final GameTutorialController _tutorialController;
+  late final TutorialTargetRegistry _tutorialTargetRegistry;
+  GameFeedbackCoordinator? _feedbackCoordinator;
+  LearningProgressController? _ownedLearningProgressController;
   Object? _generationError;
   bool _isGenerating = false;
   late int _currentLevel;
@@ -48,12 +77,38 @@ class _GameScreenState extends State<GameScreen> {
   String? _nextLevelErrorMessage;
   bool _isProgressSaveError = false;
   int _stageSessionRevision = 0;
+  int _clearLearningHandledRevision = -1;
+  bool _learningProgressReady = false;
+  List<RuleIntroduction> _ruleIntroductionQueue = const [];
+  int _ruleIntroductionIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _tutorialController = GameTutorialController();
+    _tutorialTargetRegistry = TutorialTargetRegistry();
+    final feedbackSettingsController = widget.feedbackSettingsController;
+    final soundPlayer = widget.soundPlayer;
+    final hapticPlayer = widget.hapticPlayer;
+    if (feedbackSettingsController != null &&
+        soundPlayer != null &&
+        hapticPlayer != null) {
+      _feedbackCoordinator = GameFeedbackCoordinator(
+        settingsController: feedbackSettingsController,
+        soundPlayer: soundPlayer,
+        hapticPlayer: hapticPlayer,
+      );
+    }
+    if (widget.enableTutorial && widget.learningProgressController == null) {
+      _ownedLearningProgressController = LearningProgressController(
+        store: SharedPreferencesLearningProgressStore(),
+      );
+    }
+    _learningProgressController?.addListener(_handleLearningProgressChanged);
+    _learningProgressReady = !widget.enableTutorial;
     _currentLevel = widget.level;
     _generateStage(notify: false);
+    unawaited(_initializeLearningProgress());
   }
 
   @override
@@ -70,8 +125,14 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    _controller?.removeListener(_handleGameControllerChanged);
     _controller?.dispose();
     _controller = null;
+    _tutorialController.dispose();
+    unawaited(_feedbackCoordinator?.dispose());
+    _learningProgressController?.removeListener(_handleLearningProgressChanged);
+    _ownedLearningProgressController?.dispose();
+    _tutorialTargetRegistry.clear();
     super.dispose();
   }
 
@@ -86,11 +147,16 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return AnimatedBuilder(
-      animation: controller,
+      animation: Listenable.merge([controller, _tutorialController]),
       builder: (context, _) {
         return _buildGame(context, controller);
       },
     );
+  }
+
+  LearningProgressController? get _learningProgressController {
+    return widget.learningProgressController ??
+        _ownedLearningProgressController;
   }
 
   void _generateStage({required bool notify}) {
@@ -111,13 +177,19 @@ class _GameScreenState extends State<GameScreen> {
         }
         final nextController = GameController.fromGeneratedStage(stage: stage);
         final previousController = _controller;
+        previousController?.removeListener(_handleGameControllerChanged);
         _controller = nextController;
+        nextController.addListener(_handleGameControllerChanged);
+        _feedbackCoordinator?.attach(nextController);
         _currentLevel = stage.level;
         _stageSessionRevision += 1;
+        _clearLearningHandledRevision = -1;
+        _tutorialTargetRegistry.clear();
         _generationError = null;
         _nextLevelErrorMessage = null;
         _isProgressSaveError = false;
         _isPreparingNextLevel = false;
+        _configureStageGuides();
         previousController?.dispose();
       } on StageGenerationException catch (error) {
         _replaceControllerWithError(error);
@@ -141,7 +213,12 @@ class _GameScreenState extends State<GameScreen> {
 
   void _replaceControllerWithError(Object error) {
     final previousController = _controller;
+    previousController?.removeListener(_handleGameControllerChanged);
+    unawaited(_feedbackCoordinator?.stop());
     _controller = null;
+    _tutorialController.skipAllTutorials();
+    _ruleIntroductionQueue = const [];
+    _ruleIntroductionIndex = 0;
     _generationError = error;
     _nextLevelErrorMessage = null;
     _isProgressSaveError = false;
@@ -199,13 +276,19 @@ class _GameScreenState extends State<GameScreen> {
       }
 
       setState(() {
+        currentController.removeListener(_handleGameControllerChanged);
         _controller = nextController;
+        nextController!.addListener(_handleGameControllerChanged);
+        _feedbackCoordinator?.attach(nextController);
         _currentLevel = nextStage.level;
         _stageSessionRevision += 1;
+        _clearLearningHandledRevision = -1;
+        _tutorialTargetRegistry.clear();
         _isPreparingNextLevel = false;
         _nextLevelErrorMessage = null;
         _isProgressSaveError = false;
         _generationError = null;
+        _configureStageGuides();
       });
 
       currentController.dispose();
@@ -270,6 +353,16 @@ class _GameScreenState extends State<GameScreen> {
       });
     }
     _controller?.restart();
+    _configureStageGuides();
+  }
+
+  void _restartCurrentLevel() {
+    final controller = _controller;
+    if (controller == null || controller.status != GameStatus.idle) {
+      return;
+    }
+    controller.restart();
+    _configureStageGuides();
   }
 
   void _goHome(BuildContext context) {
@@ -289,7 +382,7 @@ class _GameScreenState extends State<GameScreen> {
             tooltip: '재시작',
             iconSize: AppDimensions.iconSize,
             onPressed: controller.status == GameStatus.idle
-                ? controller.restart
+                ? _restartCurrentLevel
                 : null,
             icon: const Icon(Icons.restart_alt_rounded),
           ),
@@ -347,8 +440,11 @@ class _GameScreenState extends State<GameScreen> {
                                 isCleared: controller.isCleared,
                                 clearActiveBookId: controller.clearActiveBookId,
                                 isShelfGlowing: controller.isShelfGlowing,
-                                onBookTap: controller.handleBookTap,
-                                onEmptyTap: controller.cancelSelection,
+                                clueHighlightedBookIds:
+                                    controller.clueHighlightedBookIds,
+                                tutorialTargetRegistry: _tutorialTargetRegistry,
+                                onBookTap: _handleBookTap,
+                                onEmptyTap: _handleEmptyTap,
                               ),
                             ),
                             const SizedBox(height: AppDimensions.mediumSpacing),
@@ -362,6 +458,9 @@ class _GameScreenState extends State<GameScreen> {
                               clues: controller.clues,
                               books: _stageBooks(controller.placements),
                               satisfiedClueIds: controller.satisfiedClueIds,
+                              highlightedClueId: controller.highlightedClueId,
+                              tutorialTargetRegistry: _tutorialTargetRegistry,
+                              onClueTap: _handleClueTap,
                             ),
                           ],
                         ),
@@ -383,9 +482,221 @@ class _GameScreenState extends State<GameScreen> {
               onHome: () => _goHome(context),
               onNextLevel: _prepareNextLevel,
             ),
+          if (!controller.isCleared && _currentRuleIntroduction != null)
+            RuleIntroductionOverlay(
+              introduction: _currentRuleIntroduction!,
+              onAcknowledge: _acknowledgeCurrentRuleIntroduction,
+            ),
+          if (!controller.isCleared && _tutorialController.isActive)
+            TutorialCoachMarkOverlay(
+              registry: _tutorialTargetRegistry,
+              step: _tutorialController.currentStep!,
+              stepIndex: _tutorialController.currentStepIndex,
+              totalStepCount: _tutorialController.plan!.steps.length,
+              onAcknowledge: _tutorialController.acknowledgeCurrentStep,
+              onSkipConfirmed: _skipTutorial,
+            ),
         ],
       ),
     );
+  }
+
+  RuleIntroduction? get _currentRuleIntroduction {
+    if (_tutorialController.isActive ||
+        _ruleIntroductionIndex < 0 ||
+        _ruleIntroductionIndex >= _ruleIntroductionQueue.length) {
+      return null;
+    }
+    return _ruleIntroductionQueue[_ruleIntroductionIndex];
+  }
+
+  Future<void> _initializeLearningProgress() async {
+    if (!widget.enableTutorial) {
+      return;
+    }
+    final learningController = _learningProgressController;
+    if (learningController == null) {
+      return;
+    }
+    await learningController.initialize(currentLevel: _currentLevel);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _learningProgressReady = true;
+      _configureStageGuides();
+    });
+  }
+
+  void _configureStageGuides() {
+    final controller = _controller;
+    final stage = controller?.generatedStage;
+    if (!widget.enableTutorial ||
+        !_learningProgressReady ||
+        controller == null ||
+        stage == null) {
+      _tutorialController.skipAllTutorials();
+      _ruleIntroductionQueue = const [];
+      _ruleIntroductionIndex = 0;
+      return;
+    }
+
+    final learningController = _learningProgressController;
+    final tutorialCompleted = learningController?.tutorialCompleted ?? true;
+    _tutorialController.startForStage(
+      stage: stage,
+      tutorialCompleted: tutorialCompleted,
+    );
+
+    if (_tutorialController.isActive || stage.level <= 5) {
+      _ruleIntroductionQueue = const [];
+      _ruleIntroductionIndex = 0;
+      return;
+    }
+
+    _ruleIntroductionQueue = _buildRuleIntroductionQueue(controller);
+    _ruleIntroductionIndex = 0;
+  }
+
+  List<RuleIntroduction> _buildRuleIntroductionQueue(
+    GameController controller,
+  ) {
+    final stage = controller.generatedStage;
+    final learningController = _learningProgressController;
+    if (stage == null || learningController == null) {
+      return const [];
+    }
+
+    final formatter = const ClueTextFormatter();
+    final books = _stageBooks(stage.initialPlacements);
+    final queuedRuleCodes = <String>{};
+    final introductions = <RuleIntroduction>[];
+
+    for (final clue in stage.clues) {
+      final ruleCode = stableRuleCodeForClue(clue);
+      if (learningController.isRuleAcknowledged(ruleCode) ||
+          !queuedRuleCodes.add(ruleCode)) {
+        continue;
+      }
+      introductions.add(
+        RuleIntroduction(
+          ruleCode: ruleCode,
+          title: ruleTitleForClueType(clue.type),
+          description: ruleDescriptionForClueType(clue.type),
+          exampleClueText: formatter.format(clue: clue, books: books),
+          clueType: clue.type,
+        ),
+      );
+    }
+
+    return List<RuleIntroduction>.unmodifiable(introductions);
+  }
+
+  void _handleBookTap(String bookId) {
+    final controller = _controller;
+    if (controller == null || _currentRuleIntroduction != null) {
+      return;
+    }
+    if (!_tutorialController.canTapBook(bookId, controller)) {
+      return;
+    }
+    controller.handleBookTap(bookId);
+    _tutorialController.onBookTapped(bookId, controller);
+  }
+
+  void _handleClueTap(String clueId) {
+    final controller = _controller;
+    if (controller == null ||
+        _currentRuleIntroduction != null ||
+        controller.status != GameStatus.idle) {
+      return;
+    }
+    if (!_tutorialController.canTapClue(clueId, controller)) {
+      return;
+    }
+    controller.highlightClue(clueId);
+    _tutorialController.onClueTapped(clueId, controller);
+  }
+
+  void _handleEmptyTap() {
+    final controller = _controller;
+    if (controller == null ||
+        _currentRuleIntroduction != null ||
+        _tutorialController.blocksGameInput) {
+      return;
+    }
+    controller.cancelSelection();
+  }
+
+  void _handleLearningProgressChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _configureStageGuides();
+    });
+  }
+
+  void _handleGameControllerChanged() {
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+
+    _tutorialController.onGameControllerChanged(controller);
+    if (_tutorialController.isWaitingForClueHighlight &&
+        controller.status == GameStatus.idle &&
+        controller.highlightedClueId == null) {
+      _tutorialController.onClueHighlightFinished();
+    }
+
+    if (controller.isCleared &&
+        _clearLearningHandledRevision != _stageSessionRevision) {
+      _clearLearningHandledRevision = _stageSessionRevision;
+      unawaited(_handleStageCleared(controller));
+    }
+  }
+
+  Future<void> _handleStageCleared(GameController controller) async {
+    final stage = controller.generatedStage;
+    final learningController = _learningProgressController;
+    if (!widget.enableTutorial || stage == null || learningController == null) {
+      return;
+    }
+
+    if (stage.level <= 5) {
+      await learningController.acknowledgeRules(_ruleCodesForStage(stage));
+    }
+    if (stage.level == 5) {
+      await learningController.completeTutorial();
+    }
+  }
+
+  Iterable<String> _ruleCodesForStage(GeneratedStage stage) sync* {
+    for (final clue in stage.clues) {
+      yield stableRuleCodeForClue(clue);
+    }
+  }
+
+  void _acknowledgeCurrentRuleIntroduction() {
+    final introduction = _currentRuleIntroduction;
+    final learningController = _learningProgressController;
+    if (introduction == null || learningController == null) {
+      return;
+    }
+    setState(() {
+      _ruleIntroductionIndex += 1;
+    });
+    unawaited(learningController.acknowledgeRules([introduction.ruleCode]));
+  }
+
+  void _skipTutorial() {
+    _tutorialController.skipAllTutorials();
+    unawaited(_learningProgressController?.skipTutorial());
+    setState(() {
+      _ruleIntroductionQueue = const [];
+      _ruleIntroductionIndex = 0;
+    });
   }
 
   Scaffold _buildGenerationError(BuildContext context) {

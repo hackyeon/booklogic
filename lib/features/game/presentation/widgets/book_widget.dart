@@ -14,6 +14,7 @@ class BookWidget extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isClearActive = false,
+    this.isClueHighlighted = false,
     this.semanticsValue,
     super.key,
   });
@@ -24,6 +25,7 @@ class BookWidget extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool isClearActive;
+  final bool isClueHighlighted;
   final String? semanticsValue;
 
   @override
@@ -38,19 +40,27 @@ class BookWidget extends StatelessWidget {
         ? AppDimensions.bookSelectionLift
         : isClearActive
         ? AppDimensions.bookClearLift
+        : isClueHighlighted
+        ? AppDimensions.smallSpacing
         : 0.0;
     final scale = isSelected
         ? AppDimensions.bookSelectedScale
         : isClearActive
         ? AppDimensions.bookClearScale
+        : isClueHighlighted
+        ? 1.035
         : 1.0;
     final borderColor = isSelected
         ? AppColors.selectedBorder
         : isClearActive
         ? AppColors.clearAccent
+        : isClueHighlighted
+        ? Theme.of(context).colorScheme.tertiary
         : visual.borderColor;
     final borderWidth = isSelected || isClearActive
         ? AppDimensions.bookSelectedBorderWidth
+        : isClueHighlighted
+        ? 2.0
         : 1.0;
     final slideOffset = Offset(0, -lift / height);
 
@@ -86,9 +96,18 @@ class BookWidget extends StatelessWidget {
                         ? const Color(0x55000000)
                         : isClearActive
                         ? AppColors.clearGlow
+                        : isClueHighlighted
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.tertiary.withValues(alpha: 0.32)
                         : const Color(0x26000000),
-                    blurRadius: isSelected || isClearActive ? 14 : 8,
-                    offset: Offset(0, isSelected || isClearActive ? 7 : 4),
+                    blurRadius: isSelected || isClearActive || isClueHighlighted
+                        ? 14
+                        : 8,
+                    offset: Offset(
+                      0,
+                      isSelected || isClearActive || isClueHighlighted ? 7 : 4,
+                    ),
                   ),
                 ],
               ),

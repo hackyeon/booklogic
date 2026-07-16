@@ -11,6 +11,8 @@ class ClueCardWidget extends StatelessWidget {
     required this.text,
     required this.displayIndex,
     required this.isSatisfied,
+    this.isHighlighted = false,
+    this.onTap,
     super.key,
   });
 
@@ -18,6 +20,8 @@ class ClueCardWidget extends StatelessWidget {
   final String text;
   final int displayIndex;
   final bool isSatisfied;
+  final bool isHighlighted;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +32,8 @@ class ClueCardWidget extends StatelessWidget {
         : AppColors.cluePaper;
     final borderColor = isSatisfied
         ? AppColors.clueSatisfiedBorder
+        : isHighlighted
+        ? Theme.of(context).colorScheme.primary
         : AppColors.divider;
     final numberBackgroundColor = isSatisfied
         ? AppColors.clueSatisfiedNumberBackground
@@ -36,10 +42,18 @@ class ClueCardWidget extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       excludeFromSemantics: true,
-      onTap: () {},
+      onTap: onTap,
       child: Semantics(
         container: true,
+        button: true,
+        selected: isHighlighted,
         label: '단서 $displayIndex. $text $statusText',
+        value: isHighlighted
+            ? '$statusText, 관련 책 강조 중'
+            : isSatisfied
+            ? '만족됨'
+            : '아직 만족되지 않음',
+        hint: '탭하면 관련 책을 강조합니다.',
         child: AnimatedContainer(
           key: Key('clue_${clue.id}'),
           duration: AppDurations.clueStateChange,
@@ -49,6 +63,17 @@ class ClueCardWidget extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
             border: Border.all(color: borderColor),
+            boxShadow: isHighlighted
+                ? [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.22),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
