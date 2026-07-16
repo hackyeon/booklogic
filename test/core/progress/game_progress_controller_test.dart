@@ -169,6 +169,29 @@ void main() {
       controller.dispose();
     });
 
+    test('advances from level 200 v1 to level 201 v2', () async {
+      final store = FakeGameProgressStore(
+        progress: GameProgress(
+          schemaVersion: 1,
+          currentLevel: 200,
+          highestUnlockedLevel: 200,
+          generatorVersion: 1,
+        ),
+      );
+      final controller = GameProgressController(store: store);
+      await controller.load();
+
+      await controller.advanceToLevel(level: 201, generatorVersion: 2);
+
+      expect(controller.currentLevel, 201);
+      expect(controller.highestUnlockedLevel, 201);
+      expect(controller.generatorVersion, 2);
+      expect(store.lastWrite?.currentLevel, 201);
+      expect(store.lastWrite?.generatorVersion, 2);
+
+      controller.dispose();
+    });
+
     test('dispose during load completion is safe', () async {
       final blocker = Completer<void>();
       final store = FakeGameProgressStore(readBlocker: blocker);

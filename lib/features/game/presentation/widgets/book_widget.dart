@@ -14,6 +14,7 @@ class BookWidget extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.isClearActive = false,
+    this.semanticsValue,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class BookWidget extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final bool isClearActive;
+  final String? semanticsValue;
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +56,7 @@ class BookWidget extends StatelessWidget {
 
     return Semantics(
       label: labelFormatter.formatBook(book),
+      value: semanticsValue,
       button: true,
       selected: isSelected,
       child: GestureDetector(

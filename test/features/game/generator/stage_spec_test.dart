@@ -372,49 +372,78 @@ void main() {
         duplicateGroupCount: 1,
         maxDuplicateCopies: 2,
       );
+    });
+
+    test('generator v2 StageSpec golden values remain stable', () {
       _expectGoldenSpec(
-        factory.create(level: 201),
-        seed: 2557515752,
-        profileId: DifficultyProfileId.twelveBookMixed,
+        factory.create(
+          level: 201,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        seed: 4070155089,
+        profileId: DifficultyProfileId.verticalIntro2x6,
         tierCount: 2,
         booksPerTier: 6,
         clueCount: 6,
         targetSwapCount: 6,
         duplicateGroupCount: 1,
-        maxDuplicateCopies: 3,
+        maxDuplicateCopies: 2,
       );
       _expectGoldenSpec(
-        factory.create(level: 202),
-        seed: 3085535425,
-        profileId: DifficultyProfileId.twelveBookMixed,
+        factory.create(
+          level: 241,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        seed: 3410928389,
+        profileId: DifficultyProfileId.verticalNegative2x6,
+        tierCount: 2,
+        booksPerTier: 6,
+        clueCount: 6,
+        targetSwapCount: 6,
+        duplicateGroupCount: 2,
+        maxDuplicateCopies: 2,
+      );
+      _expectGoldenSpec(
+        factory.create(
+          level: 281,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        seed: 2496737945,
+        profileId: DifficultyProfileId.verticalThreeTier3x4,
         tierCount: 3,
         booksPerTier: 4,
-        clueCount: 6,
-        targetSwapCount: 7,
-        duplicateGroupCount: 1,
-        maxDuplicateCopies: 3,
-      );
-      _expectGoldenSpec(
-        factory.create(level: 401),
-        seed: 286349122,
-        profileId: DifficultyProfileId.advancedEndless,
-        tierCount: 3,
-        booksPerTier: 5,
-        clueCount: 7,
-        targetSwapCount: 10,
-        duplicateGroupCount: 3,
-        maxDuplicateCopies: 3,
-      );
-      _expectGoldenSpec(
-        factory.create(level: 500),
-        seed: 1378183386,
-        profileId: DifficultyProfileId.advancedEndless,
-        tierCount: 3,
-        booksPerTier: 6,
         clueCount: 7,
         targetSwapCount: 7,
-        duplicateGroupCount: 3,
-        maxDuplicateCopies: 3,
+        duplicateGroupCount: 2,
+        maxDuplicateCopies: 2,
+      );
+      _expectGoldenSpec(
+        factory.create(
+          level: 321,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        seed: 3122699240,
+        profileId: DifficultyProfileId.fullAdvanced3x4,
+        tierCount: 3,
+        booksPerTier: 4,
+        clueCount: 7,
+        targetSwapCount: 7,
+        duplicateGroupCount: 2,
+        maxDuplicateCopies: 2,
+      );
+      _expectGoldenSpec(
+        factory.create(
+          level: 400,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        seed: 4245720908,
+        profileId: DifficultyProfileId.fullAdvanced3x4,
+        tierCount: 3,
+        booksPerTier: 4,
+        clueCount: 7,
+        targetSwapCount: 7,
+        duplicateGroupCount: 2,
+        maxDuplicateCopies: 2,
       );
     });
 
@@ -428,8 +457,8 @@ void main() {
       expect(secondFactory.create(level: 100), first);
       expect(factory.create(level: 101).seed, isNot(first.seed));
       expect(
-        factory.create(level: 100, generatorVersion: 2).seed,
-        isNot(first.seed),
+        () => factory.create(level: 100, generatorVersion: 2),
+        throwsUnsupportedError,
       );
     });
 
@@ -446,63 +475,73 @@ void main() {
       );
     });
 
-    test('creates valid specs for levels 1 through 10000', () {
+    test('creates valid specs for supported version ranges', () {
       const resolver = DifficultyProfileResolver();
 
-      for (var level = 1; level <= 10000; level += 1) {
+      for (var level = 1; level <= 200; level += 1) {
         final spec = factory.create(level: level);
         final profile = resolver.resolve(level);
 
         _expectSpecInProfile(spec, profile);
       }
+      for (var level = 201; level <= 400; level += 1) {
+        final spec = factory.create(
+          level: level,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        );
+
+        expect(spec.generatorVersion, GeneratorConfig.generatorVersion2);
+        expect(spec.totalBookCount, 12);
+      }
+      expect(() => factory.create(level: 201), throwsUnsupportedError);
+      expect(
+        () => factory.create(
+          level: 401,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        ),
+        throwsUnsupportedError,
+      );
     });
 
-    test('mixed profile layout ranges produce every allowed layout', () {
-      final twelveBookLayouts = <StageLayout>{};
+    test('version 2 profile layout ranges are level-gated', () {
+      final twoTierLayouts = <StageLayout>{};
       for (var level = 201; level <= 400; level += 1) {
-        twelveBookLayouts.add(factory.create(level: level).layout);
+        final spec = factory.create(
+          level: level,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        );
+        if (level <= 280) {
+          twoTierLayouts.add(spec.layout);
+        } else {
+          expect(spec.layout, const StageLayout(tierCount: 3, booksPerTier: 4));
+        }
       }
 
-      expect(twelveBookLayouts, {
+      expect(twoTierLayouts, {
         const StageLayout(tierCount: 2, booksPerTier: 6),
-        const StageLayout(tierCount: 3, booksPerTier: 4),
-      });
-
-      final advancedLayouts = <StageLayout>{};
-      for (var level = 401; level <= 1000; level += 1) {
-        advancedLayouts.add(factory.create(level: level).layout);
-      }
-
-      expect(advancedLayouts, {
-        const StageLayout(tierCount: 3, booksPerTier: 5),
-        const StageLayout(tierCount: 3, booksPerTier: 6),
       });
     });
 
     test('representative profile values stay inside declared ranges', () {
       const resolver = DifficultyProfileResolver();
-      const representativeLevels = [
-        1,
-        5,
-        6,
-        20,
-        21,
-        50,
-        51,
-        100,
-        101,
-        200,
-        201,
-        400,
-        401,
-        1000,
-      ];
+      const representativeLevels = [1, 5, 6, 20, 21, 50, 51, 100, 101, 200];
 
       for (final level in representativeLevels) {
         final spec = factory.create(level: level);
         final profile = resolver.resolve(level);
 
         _expectSpecInProfile(spec, profile);
+      }
+      for (final level in [201, 241, 281, 321, 400]) {
+        final spec = factory.create(
+          level: level,
+          generatorVersion: GeneratorConfig.generatorVersion2,
+        );
+
+        expect(spec.clueCount, inInclusiveRange(6, 8));
+        expect(spec.targetSwapCount, inInclusiveRange(6, 8));
+        expect(spec.duplicateGroupCount, inInclusiveRange(1, 3));
+        expect(spec.maxDuplicateCopies, 2);
       }
     });
   });

@@ -17,6 +17,14 @@ class BookSelectorResolver {
         placements
             .where((placement) => placement.book.symbol == symbol)
             .toList(),
+      BookVisualSelector(:final color, :final symbol) =>
+        placements
+            .where(
+              (placement) =>
+                  placement.book.color == color &&
+                  placement.book.symbol == symbol,
+            )
+            .toList(),
     };
 
     resolved.sort(_comparePlacementPosition);

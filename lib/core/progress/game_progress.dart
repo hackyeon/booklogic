@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../../features/game/generator/generator_version_policy.dart';
+
 class GameProgress {
   const GameProgress._({
     required this.schemaVersion,
@@ -63,11 +65,14 @@ class GameProgress {
     if (level != currentLevel + 1) {
       throw ArgumentError.value(level, 'level', 'currentLevel + 1 값이어야 합니다.');
     }
-    if (generatorVersion != this.generatorVersion) {
+    final expectedVersion = const GeneratorVersionPolicy().versionForLevel(
+      level,
+    );
+    if (generatorVersion != expectedVersion) {
       throw ArgumentError.value(
         generatorVersion,
         'generatorVersion',
-        '현재 generatorVersion과 같아야 합니다.',
+        '다음 레벨의 공식 generatorVersion과 같아야 합니다.',
       );
     }
 
@@ -77,7 +82,7 @@ class GameProgress {
       highestUnlockedLevel: highestUnlockedLevel < level
           ? level
           : highestUnlockedLevel,
-      generatorVersion: this.generatorVersion,
+      generatorVersion: generatorVersion,
     );
   }
 
@@ -173,4 +178,8 @@ void _validate({
       '1 이상이어야 합니다.',
     );
   }
+  const GeneratorVersionPolicy().validate(
+    level: currentLevel,
+    generatorVersion: generatorVersion,
+  );
 }

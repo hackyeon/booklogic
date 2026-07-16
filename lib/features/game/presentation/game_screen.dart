@@ -10,6 +10,7 @@ import '../application/game_status.dart';
 import '../domain/book.dart';
 import '../domain/book_placement.dart';
 import '../generator/generator_config.dart';
+import '../generator/generator_version_policy.dart';
 import '../generator/stage_generation_exception.dart';
 import '../generator/stage_generator.dart';
 import 'formatters/book_label_formatter.dart';
@@ -24,6 +25,7 @@ class GameScreen extends StatefulWidget {
     this.level = 1,
     this.generatorVersion = GeneratorConfig.currentVersion,
     this.stageGenerator = const StageGenerator(),
+    this.generatorVersionPolicy = const GeneratorVersionPolicy(),
     super.key,
   });
 
@@ -31,6 +33,7 @@ class GameScreen extends StatefulWidget {
   final int level;
   final int generatorVersion;
   final StageGenerator stageGenerator;
+  final GeneratorVersionPolicy generatorVersionPolicy;
 
   @override
   State<GameScreen> createState() => _GameScreenState();
@@ -58,7 +61,8 @@ class _GameScreenState extends State<GameScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.level != widget.level ||
         oldWidget.generatorVersion != widget.generatorVersion ||
-        oldWidget.stageGenerator != widget.stageGenerator) {
+        oldWidget.stageGenerator != widget.stageGenerator ||
+        oldWidget.generatorVersionPolicy != widget.generatorVersionPolicy) {
       _currentLevel = widget.level;
       _generateStage(notify: false);
     }
@@ -156,7 +160,6 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     final nextLevel = currentController.level + 1;
-    final generatorVersion = currentController.generatorVersion;
 
     setState(() {
       _isPreparingNextLevel = true;
@@ -168,6 +171,9 @@ class _GameScreenState extends State<GameScreen> {
     var progressSaveStarted = false;
 
     try {
+      final generatorVersion = widget.generatorVersionPolicy.versionForLevel(
+        nextLevel,
+      );
       final nextStage = widget.stageGenerator.generate(
         level: nextLevel,
         generatorVersion: generatorVersion,
@@ -331,7 +337,8 @@ class _GameScreenState extends State<GameScreen> {
                               ),
                               child: BookshelfWidget(
                                 placements: controller.placements,
-                                slotCount: controller.booksPerTier,
+                                tierCount: controller.tierCount,
+                                booksPerTier: controller.booksPerTier,
                                 selectedBookId: controller.selectedBookId,
                                 isAnimating: controller.isAnimating,
                                 activeSwap: controller.activeSwap,
@@ -339,7 +346,9 @@ class _GameScreenState extends State<GameScreen> {
                                 isClearing: controller.isClearing,
                                 isCleared: controller.isCleared,
                                 clearActiveBookId: controller.clearActiveBookId,
+                                isShelfGlowing: controller.isShelfGlowing,
                                 onBookTap: controller.handleBookTap,
+                                onEmptyTap: controller.cancelSelection,
                               ),
                             ),
                             const SizedBox(height: AppDimensions.mediumSpacing),

@@ -2,27 +2,45 @@ import 'deterministic_random.dart';
 import 'difficulty_profile.dart';
 import 'difficulty_profile_resolver.dart';
 import 'generator_config.dart';
+import 'generator_version_policy.dart';
 import 'inclusive_int_range.dart';
 import 'stage_generation_key.dart';
 import 'stage_layout.dart';
 import 'stage_seed_factory.dart';
 import 'stage_spec.dart';
+import 't06_rule_profile.dart';
+import 't06_rule_profile_resolver.dart';
 
 class StageSpecFactory {
   const StageSpecFactory({
     this.profileResolver = const DifficultyProfileResolver(),
+    this.t06ProfileResolver = const T06RuleProfileResolver(),
     this.seedFactory = const StageSeedFactory(),
+    this.versionPolicy = const GeneratorVersionPolicy(),
   });
 
   final DifficultyProfileResolver profileResolver;
+  final T06RuleProfileResolver t06ProfileResolver;
   final StageSeedFactory seedFactory;
+  final GeneratorVersionPolicy versionPolicy;
 
   StageSpec create({
     required int level,
     int generatorVersion = GeneratorConfig.currentVersion,
   }) {
     _validateInput(level: level, generatorVersion: generatorVersion);
+    versionPolicy.validate(level: level, generatorVersion: generatorVersion);
 
+    if (generatorVersion == GeneratorConfig.generatorVersion2) {
+      return _createVersion2(level: level, generatorVersion: generatorVersion);
+    }
+    return _createVersion1(level: level, generatorVersion: generatorVersion);
+  }
+
+  StageSpec _createVersion1({
+    required int level,
+    required int generatorVersion,
+  }) {
     final profile = profileResolver.resolve(level);
     final generationKey = StageGenerationKey(
       generatorVersion: generatorVersion,
@@ -56,6 +74,45 @@ class StageSpecFactory {
       maxDuplicateCopies: profile.maxDuplicateCopies,
     );
     _validateSpec(spec: spec, profile: profile);
+    return spec;
+  }
+
+  StageSpec _createVersion2({
+    required int level,
+    required int generatorVersion,
+  }) {
+    final profile = t06ProfileResolver.resolve(level);
+    final generationKey = StageGenerationKey(
+      generatorVersion: generatorVersion,
+      level: level,
+    );
+    final seed = seedFactory.create(generationKey);
+    final random = DeterministicRandom(seed);
+
+    final clueCount = _pickFromRange(
+      range: profile.clueCountRange,
+      random: random,
+    );
+    final targetSwapCount = _pickFromRange(
+      range: profile.targetSwapCountRange,
+      random: random,
+    );
+    final duplicateGroupCount = _pickFromRange(
+      range: profile.duplicateGroupCountRange,
+      random: random,
+    );
+
+    final spec = StageSpec(
+      generationKey: generationKey,
+      seed: seed,
+      profileId: profile.id,
+      layout: profile.layout,
+      clueCount: clueCount,
+      targetSwapCount: targetSwapCount,
+      duplicateGroupCount: duplicateGroupCount,
+      maxDuplicateCopies: 2,
+    );
+    _validateT06Spec(spec: spec, profile: profile);
     return spec;
   }
 
@@ -120,6 +177,24 @@ class StageSpecFactory {
     }
     if (spec.generationKey.attempt != 0) {
       throw StateError('StageSpec generationKey attempt must be 0.');
+    }
+  }
+
+  void _validateT06Spec({
+    required StageSpec spec,
+    required T06RuleProfile profile,
+  }) {
+    if (!profile.containsLevel(spec.level)) {
+      throw StateError('T06 StageSpec level is outside its profile.');
+    }
+    if (spec.generatorVersion != GeneratorConfig.generatorVersion2 ||
+        spec.layout != profile.layout ||
+        spec.totalBookCount != 12 ||
+        !profile.clueCountRange.contains(spec.clueCount) ||
+        !profile.targetSwapCountRange.contains(spec.targetSwapCount) ||
+        !profile.duplicateGroupCountRange.contains(spec.duplicateGroupCount) ||
+        spec.maxDuplicateCopies != 2) {
+      throw StateError('T06 StageSpec does not match its profile.');
     }
   }
 }

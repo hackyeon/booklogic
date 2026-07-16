@@ -620,6 +620,14 @@ void _expectSelectorsResolveOnce(Clue clue, List<BookPlacement> placements) {
       fail('T01 selector helper does not accept BothEdgesClue.');
     case BetweenClue():
       fail('T01 selector helper does not accept BetweenClue.');
+    case TierAssignmentClue():
+      fail('T01 selector helper does not accept TierAssignmentClue.');
+    case SameTierClue():
+      fail('T01 selector helper does not accept SameTierClue.');
+    case VerticalRelationClue():
+    case NotAtEdgeClue():
+    case DistanceClue():
+      fail('T01 selector helper does not accept T06-only clue types.');
   }
 }
 

@@ -5,9 +5,11 @@ import 'package:booklogic/features/game/generator/generated_stage.dart';
 import 'package:booklogic/features/game/generator/generated_stage_factory.dart';
 import 'package:booklogic/features/game/generator/generated_stage_validator.dart';
 import 'package:booklogic/features/game/generator/generator_config.dart';
+import 'package:booklogic/features/game/generator/quality/generator_v1_quality_manifest.dart';
 import 'package:booklogic/features/game/generator/stage_generation_attempt_failure.dart';
 import 'package:booklogic/features/game/generator/stage_generation_exception.dart';
 import 'package:booklogic/features/game/generator/stage_generation_key.dart';
+import 'package:booklogic/features/game/generator/stage_candidate_builder_router.dart';
 import 'package:booklogic/features/game/generator/stage_generator.dart';
 import 'package:booklogic/features/game/generator/stage_seed_factory.dart';
 import 'package:booklogic/features/game/generator/stage_spec.dart';
@@ -363,62 +365,26 @@ void main() {
     const generator = StageGenerator();
     const validator = GeneratedStageValidator();
 
-    test('generates stable normal attempt 0 stages for golden levels', () {
+    test('uses manifest-selected final stages for golden levels', () {
       final levelOne = generator.generate(level: 1);
+      final expectedLevelOne = _routerStage(level: 1);
 
-      expect(levelOne, _manualStage(level: 1));
-      expect(levelOne.generationAttempt, 0);
-      expect(levelOne.generationAttemptSeed, 3270846678);
+      expect(levelOne, expectedLevelOne);
+      expect(levelOne.generationAttempt, 5);
+      expect(levelOne.generationAttemptSeed, 3354734773);
       expect(levelOne.isFallback, isFalse);
-      expect(_placementIds(levelOne.targetPlacements), [
-        'red_key',
-        'blue_moon',
-        'blue_leaf',
-        'yellow_leaf',
-      ]);
-      expect(_placementIds(levelOne.initialPlacements), [
-        'red_key',
-        'blue_leaf',
-        'yellow_leaf',
-        'blue_moon',
-      ]);
-      expect(_clueIds(levelOne), [
-        't01_c02_00_red_key_left_edge',
-        't01_c05_01_blue_moon_immediately_right_of_red_key',
-        't01_c04_02_blue_leaf_left_of_yellow_leaf',
-      ]);
       expect(levelOne.targetSwapCount, 2);
-      expect(levelOne.scrambleSeed, 1556238703);
       expect(validator.validate(levelOne).isValid, isTrue);
 
-      expect(_placementIds(generator.generate(level: 6).targetPlacements), [
-        'orange_moon',
-        'yellow_drop',
-        'blue_leaf',
-        'yellow_moon',
-        'yellow_star',
-      ]);
-      expect(_placementIds(generator.generate(level: 6).initialPlacements), [
-        'yellow_drop',
-        'yellow_moon',
-        'blue_leaf',
-        'orange_moon',
-        'yellow_star',
-      ]);
-      expect(_placementIds(generator.generate(level: 20).targetPlacements), [
-        'red_drop',
-        'yellow_sun',
-        'yellow_moon',
-        'blue_star',
-        'green_key',
-      ]);
-      expect(_placementIds(generator.generate(level: 20).initialPlacements), [
-        'yellow_moon',
-        'red_drop',
-        'green_key',
-        'blue_star',
-        'yellow_sun',
-      ]);
+      for (final level in [6, 20]) {
+        final stage = generator.generate(level: level);
+        expect(stage, _routerStage(level: level), reason: 'level $level');
+        expect(
+          stage.generationAttempt,
+          GeneratorV1QualityManifest.preferredAttemptByLevel[level],
+        );
+        expect(validator.validate(stage).isValid, isTrue);
+      }
     });
 
     test('keeps levels 1 through 20 deterministic and valid', () {
@@ -427,7 +393,11 @@ void main() {
         final second = generator.generate(level: level);
 
         expect(first, second, reason: 'level $level');
-        expect(first.generationAttempt, 0, reason: 'level $level');
+        expect(
+          first.generationAttempt,
+          GeneratorV1QualityManifest.preferredAttemptByLevel[level],
+          reason: 'level $level',
+        );
         expect(first.isFallback, isFalse, reason: 'level $level');
         expect(
           validator.validate(first).isValid,
@@ -441,7 +411,7 @@ void main() {
       'creates StageSpec once and retries with attempt seeds until success',
       () {
         final specFactory = _CountingStageSpecFactory();
-        final builder = _FailingAttemptBuilder(failAttempts: {0, 1});
+        final builder = _FailingAttemptBuilder(failAttempts: {5, 0});
         final stage = StageGenerator(
           stageSpecFactory: specFactory,
           attemptBuilder: builder,
@@ -449,16 +419,16 @@ void main() {
         ).generate(level: 1);
 
         expect(specFactory.createCount, 1);
-        expect(builder.attempts, [0, 1, 2]);
-        expect(builder.seeds, [3270846678, 3287624297, 3237291440]);
+        expect(builder.attempts, [5, 0, 1]);
+        expect(builder.seeds, [3354734773, 3270846678, 3287624297]);
         expect(
           builder.stageSpecs.every(
             (stageSpec) => identical(stageSpec, specFactory.createdSpec),
           ),
           isTrue,
         );
-        expect(stage.generationAttempt, 2);
-        expect(stage.generationAttemptSeed, 3237291440);
+        expect(stage.generationAttempt, 1);
+        expect(stage.generationAttemptSeed, 3287624297);
         expect(stage.isFallback, isFalse);
         expect(validator.validate(stage).isValid, isTrue);
       },
@@ -471,7 +441,7 @@ void main() {
         maxAttempts: 8,
       ).generate(level: 1);
 
-      expect(builder.attempts, [0, 1, 2, 3, 4, 5, 6, 7]);
+      expect(builder.attempts, [5, 0, 1, 2, 3, 4, 6, 7]);
       expect(stage.isFallback, isTrue);
       expect(stage.generationAttempt, 8);
       expect(stage.generationAttemptSeed, 3405067630);
@@ -545,7 +515,7 @@ void main() {
         fallbackFactory: fallbackFactory,
       ).generate(level: 1);
 
-      expect(builder.attempts, [0]);
+      expect(builder.attempts, [5]);
       expect(fallbackFactory.fallbackAttempts, isEmpty);
       expect(stage.isFallback, isFalse);
     });
@@ -558,7 +528,7 @@ void main() {
         () => StageGenerator(
           attemptBuilder: builder,
           fallbackFactory: fallbackFactory,
-        ).generate(level: 51),
+        ).generate(level: 201),
         throwsUnsupportedError,
       );
       expect(builder.supportChecks, 0);
@@ -578,6 +548,16 @@ void main() {
       );
     });
   });
+}
+
+GeneratedStage _routerStage({required int level}) {
+  const specFactory = StageSpecFactory();
+  const router = StageCandidateBuilderRouter();
+  final attempt = GeneratorV1QualityManifest.preferredAttemptByLevel[level]!;
+  return router.buildAttempt(
+    stageSpec: specFactory.create(level: level),
+    generationAttempt: attempt,
+  );
 }
 
 int _seed(StageSeedFactory seedFactory, int level, int attempt) {

@@ -30,6 +30,15 @@ enum StageValidationIssueCode {
   invalidGenerationAttemptKey,
   invalidGenerationAttemptSeed,
   invalidFallbackMetadata,
+  invalidT04TargetStructure,
+  invalidT04ClueStructure,
+  invalidT05TargetStructure,
+  invalidT05ClueStructure,
+  invalidT05ScrambleQuality,
+  invalidT06TargetStructure,
+  invalidT06ClueStructure,
+  invalidT06ScrambleQuality,
+  invalidGeneratorVersionLevelPair,
 }
 
 class StageValidationIssue {

@@ -14,7 +14,12 @@ class ClueEvaluator {
       BothEdgesClue() => _evaluateBothEdges(clue, placements),
       RelativeOrderClue() => _evaluateRelativeOrder(clue, placements),
       BetweenClue() => _evaluateBetween(clue, placements),
+      TierAssignmentClue() => _evaluateTierAssignment(clue, placements),
+      SameTierClue() => _evaluateSameTier(clue, placements),
       AdjacentClue() => _evaluateAdjacent(clue, placements),
+      VerticalRelationClue() => _evaluateVerticalRelation(clue, placements),
+      NotAtEdgeClue() => _evaluateNotAtEdge(clue, placements),
+      DistanceClue() => _evaluateDistance(clue, placements),
     };
   }
 
@@ -59,13 +64,19 @@ class ClueEvaluator {
     RelativeOrderClue clue,
     List<BookPlacement> placements,
   ) {
-    final subjects = _resolveInTier(clue.subject, placements, clue.tierIndex);
-    final references = _resolveInTier(
-      clue.reference,
-      placements,
-      clue.tierIndex,
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
+    final references = selectorResolver.resolve(
+      selector: clue.reference,
+      placements: placements,
     );
     if (subjects.isEmpty || references.isEmpty) {
+      return false;
+    }
+    if (!_allInTier(subjects, clue.tierIndex) ||
+        !_allInTier(references, clue.tierIndex)) {
       return false;
     }
 
@@ -85,8 +96,14 @@ class ClueEvaluator {
   }
 
   bool _evaluateBothEdges(BothEdgesClue clue, List<BookPlacement> placements) {
-    final subjects = _resolveInTier(clue.subject, placements, clue.tierIndex);
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
     if (subjects.length != 2) {
+      return false;
+    }
+    if (!_allInTier(subjects, clue.tierIndex)) {
       return false;
     }
 
@@ -111,13 +128,19 @@ class ClueEvaluator {
   }
 
   bool _evaluateBetween(BetweenClue clue, List<BookPlacement> placements) {
-    final subjects = _resolveInTier(clue.subject, placements, clue.tierIndex);
-    final boundaries = _resolveInTier(
-      clue.boundary,
-      placements,
-      clue.tierIndex,
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
+    final boundaries = selectorResolver.resolve(
+      selector: clue.boundary,
+      placements: placements,
     );
     if (subjects.isEmpty || boundaries.length != 2) {
+      return false;
+    }
+    if (!_allInTier(subjects, clue.tierIndex) ||
+        !_allInTier(boundaries, clue.tierIndex)) {
       return false;
     }
 
@@ -138,14 +161,64 @@ class ClueEvaluator {
     return true;
   }
 
+  bool _evaluateTierAssignment(
+    TierAssignmentClue clue,
+    List<BookPlacement> placements,
+  ) {
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
+    if (subjects.isEmpty) {
+      return false;
+    }
+    return _allInTier(subjects, clue.tierIndex);
+  }
+
+  bool _evaluateSameTier(SameTierClue clue, List<BookPlacement> placements) {
+    final first = selectorResolver.resolve(
+      selector: clue.first,
+      placements: placements,
+    );
+    final second = selectorResolver.resolve(
+      selector: clue.second,
+      placements: placements,
+    );
+    if (first.isEmpty || second.isEmpty) {
+      return false;
+    }
+
+    final firstIds = {for (final placement in first) placement.book.id};
+    for (final placement in second) {
+      if (firstIds.contains(placement.book.id)) {
+        return false;
+      }
+    }
+
+    final tierIndexes = <int>{};
+    for (final placement in first) {
+      tierIndexes.add(placement.position.tierIndex);
+    }
+    for (final placement in second) {
+      tierIndexes.add(placement.position.tierIndex);
+    }
+    return tierIndexes.length == 1;
+  }
+
   bool _evaluateAdjacent(AdjacentClue clue, List<BookPlacement> placements) {
-    final subjects = _resolveInTier(clue.subject, placements, clue.tierIndex);
-    final references = _resolveInTier(
-      clue.reference,
-      placements,
-      clue.tierIndex,
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
+    final references = selectorResolver.resolve(
+      selector: clue.reference,
+      placements: placements,
     );
     if (subjects.isEmpty || references.isEmpty) {
+      return false;
+    }
+    if (!_allInTier(subjects, clue.tierIndex) ||
+        !_allInTier(references, clue.tierIndex)) {
       return false;
     }
 
@@ -177,6 +250,66 @@ class ClueEvaluator {
     };
   }
 
+  bool _evaluateVerticalRelation(
+    VerticalRelationClue clue,
+    List<BookPlacement> placements,
+  ) {
+    final subject = _resolveSingle(clue.subject, placements);
+    final reference = _resolveSingle(clue.reference, placements);
+    if (subject == null || reference == null) {
+      return false;
+    }
+    if (subject.book.id == reference.book.id ||
+        subject.position.slotIndex != reference.position.slotIndex) {
+      return false;
+    }
+    return switch (clue.relation) {
+      VerticalRelation.immediatelyAbove =>
+        subject.position.tierIndex + 1 == reference.position.tierIndex,
+      VerticalRelation.immediatelyBelow =>
+        subject.position.tierIndex == reference.position.tierIndex + 1,
+    };
+  }
+
+  bool _evaluateNotAtEdge(NotAtEdgeClue clue, List<BookPlacement> placements) {
+    final subjects = selectorResolver.resolve(
+      selector: clue.subject,
+      placements: placements,
+    );
+    if (subjects.isEmpty || !_allInTier(subjects, clue.tierIndex)) {
+      return false;
+    }
+    final tierPlacements = placements
+        .where((placement) => placement.position.tierIndex == clue.tierIndex)
+        .toList();
+    if (tierPlacements.length < 3) {
+      return false;
+    }
+    final lastSlotIndex = _maxSlotIndex(tierPlacements);
+    for (final subject in subjects) {
+      final slotIndex = subject.position.slotIndex;
+      if (slotIndex <= 0 || slotIndex >= lastSlotIndex) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _evaluateDistance(DistanceClue clue, List<BookPlacement> placements) {
+    final first = _resolveSingle(clue.first, placements);
+    final second = _resolveSingle(clue.second, placements);
+    if (first == null ||
+        second == null ||
+        first.book.id == second.book.id ||
+        first.position.tierIndex != clue.tierIndex ||
+        second.position.tierIndex != clue.tierIndex) {
+      return false;
+    }
+    final distance =
+        (first.position.slotIndex - second.position.slotIndex).abs() - 1;
+    return distance == clue.booksBetween;
+  }
+
   BookPlacement? _resolveSingle(
     BookSelector selector,
     List<BookPlacement> placements,
@@ -189,17 +322,6 @@ class ClueEvaluator {
       return null;
     }
     return resolved.single;
-  }
-
-  List<BookPlacement> _resolveInTier(
-    BookSelector selector,
-    List<BookPlacement> placements,
-    int tierIndex,
-  ) {
-    return selectorResolver
-        .resolve(selector: selector, placements: placements)
-        .where((placement) => placement.position.tierIndex == tierIndex)
-        .toList(growable: false);
   }
 
   int _minSlotIndex(List<BookPlacement> placements) {
@@ -233,6 +355,15 @@ class ClueEvaluator {
     final sorted = List<int>.of(values)..sort();
     for (var index = 0; index < sorted.length - 1; index += 1) {
       if (sorted[index] + 1 != sorted[index + 1]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _allInTier(List<BookPlacement> placements, int tierIndex) {
+    for (final placement in placements) {
+      if (placement.position.tierIndex != tierIndex) {
         return false;
       }
     }

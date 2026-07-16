@@ -249,6 +249,14 @@ class T01AnchorChainClueFactory {
         throw StateError('T01 clue shape must not use BothEdgesClue.');
       case BetweenClue():
         throw StateError('T01 clue shape must not use BetweenClue.');
+      case TierAssignmentClue():
+        throw StateError('T01 clue shape must not use TierAssignmentClue.');
+      case SameTierClue():
+        throw StateError('T01 clue shape must not use SameTierClue.');
+      case VerticalRelationClue():
+      case NotAtEdgeClue():
+      case DistanceClue():
+        throw StateError('T01 clue shape must not use T06-only clue types.');
     }
   }
 

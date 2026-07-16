@@ -69,3 +69,27 @@ final class BookSymbolSelector extends BookSelector {
     return 'BookSymbolSelector(symbol: $symbol)';
   }
 }
+
+final class BookVisualSelector extends BookSelector {
+  const BookVisualSelector({required this.color, required this.symbol});
+
+  final BookColor color;
+  final BookSymbol symbol;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is BookVisualSelector &&
+            runtimeType == other.runtimeType &&
+            color == other.color &&
+            symbol == other.symbol;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, color, symbol);
+
+  @override
+  String toString() {
+    return 'BookVisualSelector(color: $color, symbol: $symbol)';
+  }
+}

@@ -24,6 +24,8 @@ class BookLabelFormatter {
       BookIdSelector(:final bookId) => _formatBookId(bookId, books),
       BookColorSelector(:final color) => '모든 ${_colorLabel(color)} 책',
       BookSymbolSelector(:final symbol) => '모든 ${_symbolLabel(symbol)} 문양 책',
+      BookVisualSelector(:final color, :final symbol) =>
+        '모든 ${_colorLabel(color)} ${_symbolLabel(symbol)} 책',
     };
   }
 

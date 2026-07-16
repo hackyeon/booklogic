@@ -12,6 +12,8 @@ import 'package:booklogic/features/game/generator/generated_stage.dart';
 import 'package:booklogic/features/game/generator/generated_stage_validator.dart';
 import 'package:booklogic/features/game/generator/puzzle_template_id.dart';
 import 'package:booklogic/features/game/generator/puzzle_template_resolver.dart';
+import 'package:booklogic/features/game/generator/quality/generator_v1_quality_manifest.dart';
+import 'package:booklogic/features/game/generator/stage_candidate_builder_router.dart';
 import 'package:booklogic/features/game/generator/stage_generator.dart';
 import 'package:booklogic/features/game/generator/stage_generation_key.dart';
 import 'package:booklogic/features/game/generator/stage_permutation_analyzer.dart';
@@ -46,8 +48,24 @@ void main() {
         );
       }
 
+      for (var level = 51; level <= 100; level += 1) {
+        expect(
+          resolver.resolve(specFactory.create(level: level)),
+          PuzzleTemplateId.t04TierGrouping,
+          reason: 'level $level',
+        );
+      }
+
+      for (var level = 101; level <= 200; level += 1) {
+        expect(
+          resolver.resolve(specFactory.create(level: level)),
+          PuzzleTemplateId.t05TierOrder,
+          reason: 'level $level',
+        );
+      }
+
       expect(
-        () => resolver.resolve(specFactory.create(level: 51)),
+        () => resolver.resolve(specFactory.create(level: 201)),
         throwsUnsupportedError,
       );
     });
@@ -136,8 +154,8 @@ void main() {
     const analyzer = StagePermutationAnalyzer();
     const validator = GeneratedStageValidator();
 
-    test('level 23 matches the generator v1 golden', () {
-      final stage = generator.generate(level: 23);
+    test('level 23 attempt 0 matches the generator v1 golden', () {
+      final stage = _attemptStage(level: 23);
 
       expect(stage.templateId, PuzzleTemplateId.t03AdjacentBlocks);
       expect(stage.stageSpec.seed, 2015127744);
@@ -203,7 +221,7 @@ void main() {
 
     test('levels 35 and 47 match fixed golden data', () {
       _expectGolden(
-        generator.generate(level: 35),
+        _attemptStage(level: 35),
         seed: 3114166711,
         scrambleSeed: 2066532226,
         targetSwapCount: 3,
@@ -231,7 +249,7 @@ void main() {
         ],
       );
       _expectGolden(
-        generator.generate(level: 47),
+        _attemptStage(level: 47),
         seed: 1193548230,
         scrambleSeed: 2241247219,
         targetSwapCount: 4,
@@ -272,7 +290,11 @@ void main() {
 
         expect(first, second, reason: 'level $level');
         expect(first.templateId, expected, reason: 'level $level');
-        expect(first.generationAttempt, 0, reason: 'level $level');
+        expect(
+          first.generationAttempt,
+          GeneratorV1QualityManifest.preferredAttemptByLevel[level],
+          reason: 'level $level',
+        );
         expect(first.isFallback, isFalse, reason: 'level $level');
         expect(validator.validate(first).isValid, isTrue, reason: '$level');
       }
@@ -327,7 +349,7 @@ void main() {
         t03AttemptBuilder: builder,
       ).generate(level: 23);
 
-      expect(builder.attempts, [0, 1, 2, 3, 4, 5, 6, 7]);
+      expect(builder.attempts, [2, 0, 1, 3, 4, 5, 6, 7]);
       expect(stage.templateId, PuzzleTemplateId.t03AdjacentBlocks);
       expect(stage.isFallback, isTrue);
       expect(stage.generationAttempt, 8);
@@ -360,13 +382,10 @@ void main() {
       expect(controller.placements, hasLength(6));
       expect(controller.moveCount, 0);
       expect(controller.status, GameStatus.idle);
-      expect(controller.satisfiedClueCount, 2);
-      expect(controller.clues, hasLength(5));
+      expect(controller.satisfiedClueCount, _satisfiedCount(stage));
+      expect(controller.clues, hasLength(stage.clueCount));
 
-      await _swap(controller, 'blue_moon', 'green_drop_copy_01');
-      await _swap(controller, 'green_drop_copy_01', 'purple_cloud');
-      await _swap(controller, 'purple_cloud', 'yellow_leaf');
-      await _swap(controller, 'yellow_leaf', 'orange_leaf');
+      await _clearByReverseSwapHistory(controller, stage);
 
       expect(_ids(controller.placements), _ids(stage.targetPlacements));
       expect(controller.satisfiedClueCount, 5);
@@ -374,6 +393,15 @@ void main() {
       expect(controller.status, GameStatus.clearing);
     });
   });
+}
+
+GeneratedStage _attemptStage({required int level, int attempt = 0}) {
+  const specFactory = StageSpecFactory();
+  const router = StageCandidateBuilderRouter();
+  return router.buildAttempt(
+    stageSpec: specFactory.create(level: level),
+    generationAttempt: attempt,
+  );
 }
 
 void _expectGolden(
@@ -423,6 +451,30 @@ Future<void> _swap(
   controller.handleBookTap(firstId);
   controller.handleBookTap(secondId);
   await Future<void>.delayed(const Duration(milliseconds: 5));
+}
+
+Future<void> _clearByReverseSwapHistory(
+  GameController controller,
+  GeneratedStage stage,
+) async {
+  for (final step in stage.swapHistory.reversed) {
+    final firstId = _bookIdAt(controller.placements, step.firstPosition);
+    final secondId = _bookIdAt(controller.placements, step.secondPosition);
+    await _swap(controller, firstId, secondId);
+  }
+}
+
+String _bookIdAt(List<BookPlacement> placements, BookPosition position) {
+  return placements
+      .singleWhere((placement) => placement.position == position)
+      .book
+      .id;
+}
+
+int _satisfiedCount(GeneratedStage stage) {
+  return const ClueEvaluator()
+      .evaluateAll(clues: stage.clues, placements: stage.initialPlacements)
+      .length;
 }
 
 List<String> _ids(List<BookPlacement> placements) {

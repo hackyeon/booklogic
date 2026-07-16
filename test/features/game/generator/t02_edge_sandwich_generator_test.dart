@@ -13,6 +13,8 @@ import 'package:booklogic/features/game/generator/generated_stage.dart';
 import 'package:booklogic/features/game/generator/generated_stage_validator.dart';
 import 'package:booklogic/features/game/generator/puzzle_template_id.dart';
 import 'package:booklogic/features/game/generator/puzzle_template_resolver.dart';
+import 'package:booklogic/features/game/generator/quality/generator_v1_quality_manifest.dart';
+import 'package:booklogic/features/game/generator/stage_candidate_builder_router.dart';
 import 'package:booklogic/features/game/generator/stage_generator.dart';
 import 'package:booklogic/features/game/generator/stage_permutation_analyzer.dart';
 import 'package:booklogic/features/game/generator/stage_validation_issue.dart';
@@ -204,8 +206,8 @@ void main() {
     const analyzer = StagePermutationAnalyzer();
     const validator = GeneratedStageValidator();
 
-    test('level 21 matches the generator v1 golden', () {
-      final stage = generator.generate(level: 21);
+    test('level 21 attempt 0 matches the generator v1 golden', () {
+      final stage = _attemptStage(level: 21);
 
       expect(stage.templateId, PuzzleTemplateId.t02EdgeSandwich);
       expect(stage.stageSpec.seed, 2758664950);
@@ -269,7 +271,7 @@ void main() {
 
     test('level 22, 25, 50, and fallback match fixed golden data', () {
       _expectGolden(
-        generator.generate(level: 22),
+        _attemptStage(level: 22),
         seed: 1752334835,
         scrambleSeed: 3986246552,
         targetSwapCount: 4,
@@ -304,7 +306,7 @@ void main() {
         ],
       );
       _expectGolden(
-        generator.generate(level: 25),
+        _attemptStage(level: 25),
         seed: 4123276330,
         scrambleSeed: 1882193473,
         targetSwapCount: 3,
@@ -337,7 +339,7 @@ void main() {
         ],
       );
       _expectGolden(
-        generator.generate(level: 50),
+        _attemptStage(level: 50),
         seed: 2470398806,
         scrambleSeed: 383025469,
         targetSwapCount: 3,
@@ -414,7 +416,11 @@ void main() {
 
         expect(first, second, reason: 'level $level');
         expect(first.templateId, PuzzleTemplateId.t02EdgeSandwich);
-        expect(first.generationAttempt, 0, reason: 'level $level');
+        expect(
+          first.generationAttempt,
+          GeneratorV1QualityManifest.preferredAttemptByLevel[level],
+          reason: 'level $level',
+        );
         expect(first.isFallback, isFalse, reason: 'level $level');
         expect(first.tierCount, 1);
         expect(first.booksPerTier, 6);
@@ -458,8 +464,8 @@ void main() {
       }
     });
 
-    test('level 51 remains unsupported', () {
-      expect(() => generator.generate(level: 51), throwsUnsupportedError);
+    test('level 201 remains unsupported', () {
+      expect(() => generator.generate(level: 201), throwsUnsupportedError);
     });
 
     test('visual distance treats duplicate copies as interchangeable', () {
@@ -576,8 +582,8 @@ void main() {
         expect(controller.placements, hasLength(6));
         expect(controller.moveCount, 0);
         expect(controller.status, GameStatus.idle);
-        expect(controller.satisfiedClueCount, 1);
-        expect(controller.clues, hasLength(4));
+        expect(controller.satisfiedClueCount, _satisfiedCount(stage));
+        expect(controller.clues, hasLength(stage.clueCount));
 
         final initialOrder = _ids(controller.placements);
         controller.handleBookTap('orange_cloud_copy_01');
@@ -587,10 +593,7 @@ void main() {
         expect(controller.status, GameStatus.idle);
         expect(_ids(controller.placements), initialOrder);
 
-        await _swap(controller, 'blue_leaf', 'orange_cloud_copy_02');
-        await _swap(controller, 'orange_cloud_copy_02', 'red_sun');
-        await _swap(controller, 'red_sun', 'red_star');
-        await _swap(controller, 'red_star', 'purple_diamond');
+        await _clearByReverseSwapHistory(controller, stage);
 
         expect(_ids(controller.placements), _ids(stage.targetPlacements));
         expect(controller.satisfiedClueCount, 4);
@@ -599,6 +602,15 @@ void main() {
       },
     );
   });
+}
+
+GeneratedStage _attemptStage({required int level, int attempt = 0}) {
+  const specFactory = StageSpecFactory();
+  const router = StageCandidateBuilderRouter();
+  return router.buildAttempt(
+    stageSpec: specFactory.create(level: level),
+    generationAttempt: attempt,
+  );
 }
 
 void _expectGolden(
@@ -639,6 +651,30 @@ Future<void> _swap(
   controller.handleBookTap(firstId);
   controller.handleBookTap(secondId);
   await Future<void>.delayed(const Duration(milliseconds: 5));
+}
+
+Future<void> _clearByReverseSwapHistory(
+  GameController controller,
+  GeneratedStage stage,
+) async {
+  for (final step in stage.swapHistory.reversed) {
+    final firstId = _bookIdAt(controller.placements, step.firstPosition);
+    final secondId = _bookIdAt(controller.placements, step.secondPosition);
+    await _swap(controller, firstId, secondId);
+  }
+}
+
+String _bookIdAt(List<BookPlacement> placements, BookPosition position) {
+  return placements
+      .singleWhere((placement) => placement.position == position)
+      .book
+      .id;
+}
+
+int _satisfiedCount(GeneratedStage stage) {
+  return const ClueEvaluator()
+      .evaluateAll(clues: stage.clues, placements: stage.initialPlacements)
+      .length;
 }
 
 List<String> _ids(List<BookPlacement> placements) {

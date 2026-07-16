@@ -1,0 +1,2524 @@
+[
+  {
+    "level": 201,
+    "generatorVersion": 2,
+    "stageSeed": 4070155089,
+    "stageSpec": {
+      "generationKey": {
+        "generatorVersion": 2,
+        "level": 201,
+        "attempt": 0
+      },
+      "seed": 4070155089,
+      "profileId": "vertical_intro_2x6",
+      "tierCount": 2,
+      "booksPerTier": 6,
+      "totalBookCount": 12,
+      "clueCount": 6,
+      "targetSwapCount": 6,
+      "duplicateGroupCount": 1,
+      "maxDuplicateCopies": 2
+    },
+    "profileId": "vertical_intro_2x6",
+    "templateId": "t06_vertical_pair",
+    "preferredAttempt": 5,
+    "generationAttempt": 5,
+    "generationAttemptSeed": 4120487946,
+    "targetPlacements": [
+      {
+        "book": {
+          "id": "green_leaf",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "purple_leaf_copy_01",
+          "color": "purple",
+          "symbol": "leaf",
+          "visualCode": "purple_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "purple_leaf_copy_02",
+          "color": "purple",
+          "symbol": "leaf",
+          "visualCode": "purple_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_cloud",
+          "color": "green",
+          "symbol": "cloud",
+          "visualCode": "green_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "purple_key",
+          "color": "purple",
+          "symbol": "key",
+          "visualCode": "purple_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        }
+      },
+      {
+        "book": {
+          "id": "orange_star",
+          "color": "orange",
+          "symbol": "star",
+          "visualCode": "orange_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_key",
+          "color": "green",
+          "symbol": "key",
+          "visualCode": "green_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_diamond",
+          "color": "yellow",
+          "symbol": "diamond",
+          "visualCode": "yellow_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "red_sun",
+          "color": "red",
+          "symbol": "sun",
+          "visualCode": "red_sun"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 5
+        }
+      }
+    ],
+    "clues": [
+      {
+        "id": "t06_c08_00_green_leaf_immediately_above_orange_star",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "orange_star"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_01_green_cloud_immediately_above_blue_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_cloud"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c07_02_green_leaf_same_tier_as_purple_key",
+        "type": "same_tier",
+        "first": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "second": {
+          "type": "book_id",
+          "bookId": "purple_key"
+        }
+      },
+      {
+        "id": "t06_c04_03_green_leaf_left_of_purple_key_tier_0",
+        "type": "relative_order",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "purple_key"
+        },
+        "tierIndex": 0,
+        "relation": "left_of"
+      },
+      {
+        "id": "t06_c05_04_green_cloud_immediately_left_of_green_diamond_tier_0",
+        "type": "adjacent",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_cloud"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "tierIndex": 0,
+        "direction": "immediately_left_of"
+      },
+      {
+        "id": "t06_c01_05_green_leaf_tier_0",
+        "type": "tier_assignment",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "tierIndex": 0
+      }
+    ],
+    "scrambleSeed": 641453158,
+    "initialPlacements": [
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "purple_leaf_copy_01",
+          "color": "purple",
+          "symbol": "leaf",
+          "visualCode": "purple_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_cloud",
+          "color": "green",
+          "symbol": "cloud",
+          "visualCode": "green_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "purple_leaf_copy_02",
+          "color": "purple",
+          "symbol": "leaf",
+          "visualCode": "purple_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "purple_key",
+          "color": "purple",
+          "symbol": "key",
+          "visualCode": "purple_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        }
+      },
+      {
+        "book": {
+          "id": "orange_star",
+          "color": "orange",
+          "symbol": "star",
+          "visualCode": "orange_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_key",
+          "color": "green",
+          "symbol": "key",
+          "visualCode": "green_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_diamond",
+          "color": "yellow",
+          "symbol": "diamond",
+          "visualCode": "yellow_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "red_sun",
+          "color": "red",
+          "symbol": "sun",
+          "visualCode": "red_sun"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 5
+        }
+      }
+    ],
+    "swapHistory": [
+      {
+        "stepIndex": 0,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "blue_key",
+        "secondBookIdBeforeSwap": "purple_leaf_copy_02"
+      },
+      {
+        "stepIndex": 1,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        },
+        "firstBookIdBeforeSwap": "purple_leaf_copy_02",
+        "secondBookIdBeforeSwap": "green_diamond"
+      },
+      {
+        "stepIndex": 2,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        },
+        "firstBookIdBeforeSwap": "green_diamond",
+        "secondBookIdBeforeSwap": "purple_drop"
+      },
+      {
+        "stepIndex": 3,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "purple_drop",
+        "secondBookIdBeforeSwap": "green_leaf"
+      },
+      {
+        "stepIndex": 4,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        },
+        "firstBookIdBeforeSwap": "green_leaf",
+        "secondBookIdBeforeSwap": "green_key"
+      },
+      {
+        "stepIndex": 5,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "green_key",
+        "secondBookIdBeforeSwap": "yellow_diamond"
+      }
+    ],
+    "initialSatisfiedClueCount": 0,
+    "initialUnsatisfiedClueCount": 6,
+    "minimumVisualSwapDistance": 6,
+    "solution": {
+      "distinctVisualSolutionCount": 32,
+      "solutionCountExact": false,
+      "solverVisitedNodes": 99,
+      "reachedNodeLimit": false,
+      "reachedSolutionLimit": true,
+      "targetSignatureFound": true
+    }
+  },
+  {
+    "level": 241,
+    "generatorVersion": 2,
+    "stageSeed": 3410928389,
+    "stageSpec": {
+      "generationKey": {
+        "generatorVersion": 2,
+        "level": 241,
+        "attempt": 0
+      },
+      "seed": 3410928389,
+      "profileId": "vertical_negative_2x6",
+      "tierCount": 2,
+      "booksPerTier": 6,
+      "totalBookCount": 12,
+      "clueCount": 6,
+      "targetSwapCount": 6,
+      "duplicateGroupCount": 2,
+      "maxDuplicateCopies": 2
+    },
+    "profileId": "vertical_negative_2x6",
+    "templateId": "t06_vertical_pair",
+    "preferredAttempt": 1,
+    "generationAttempt": 1,
+    "generationAttemptSeed": 3394150770,
+    "targetPlacements": [
+      {
+        "book": {
+          "id": "red_star",
+          "color": "red",
+          "symbol": "star",
+          "visualCode": "red_star"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_moon_copy_01",
+          "color": "green",
+          "symbol": "moon",
+          "visualCode": "green_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_moon_copy_02",
+          "color": "green",
+          "symbol": "moon",
+          "visualCode": "green_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "blue_moon",
+          "color": "blue",
+          "symbol": "moon",
+          "visualCode": "blue_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "purple_star",
+          "color": "purple",
+          "symbol": "star",
+          "visualCode": "purple_star"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond_copy_01",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond_copy_02",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "orange_key",
+          "color": "orange",
+          "symbol": "key",
+          "visualCode": "orange_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "blue_drop",
+          "color": "blue",
+          "symbol": "drop",
+          "visualCode": "blue_drop"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "purple_diamond",
+          "color": "purple",
+          "symbol": "diamond",
+          "visualCode": "purple_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 5
+        }
+      }
+    ],
+    "clues": [
+      {
+        "id": "t06_c08_00_red_star_immediately_above_blue_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "red_star"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_01_red_cloud_immediately_above_orange_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "red_cloud"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "orange_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c09_02_visual_green_moon_not_at_edge_tier_0",
+        "type": "not_at_edge",
+        "subject": {
+          "type": "visual",
+          "color": "green",
+          "symbol": "moon",
+          "visualCode": "green_moon"
+        },
+        "tierIndex": 0
+      },
+      {
+        "id": "t06_c07_03_red_star_same_tier_as_purple_star",
+        "type": "same_tier",
+        "first": {
+          "type": "book_id",
+          "bookId": "red_star"
+        },
+        "second": {
+          "type": "book_id",
+          "bookId": "purple_star"
+        }
+      },
+      {
+        "id": "t06_c04_04_red_star_left_of_purple_star_tier_0",
+        "type": "relative_order",
+        "subject": {
+          "type": "book_id",
+          "bookId": "red_star"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "purple_star"
+        },
+        "tierIndex": 0,
+        "relation": "left_of"
+      },
+      {
+        "id": "t06_c05_05_red_cloud_immediately_left_of_blue_moon_tier_0",
+        "type": "adjacent",
+        "subject": {
+          "type": "book_id",
+          "bookId": "red_cloud"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_moon"
+        },
+        "tierIndex": 0,
+        "direction": "immediately_left_of"
+      }
+    ],
+    "scrambleSeed": 434947358,
+    "initialPlacements": [
+      {
+        "book": {
+          "id": "red_star",
+          "color": "red",
+          "symbol": "star",
+          "visualCode": "red_star"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_moon_copy_01",
+          "color": "green",
+          "symbol": "moon",
+          "visualCode": "green_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "blue_moon",
+          "color": "blue",
+          "symbol": "moon",
+          "visualCode": "blue_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond_copy_02",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "green_moon_copy_02",
+          "color": "green",
+          "symbol": "moon",
+          "visualCode": "green_moon"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        }
+      },
+      {
+        "book": {
+          "id": "purple_star",
+          "color": "purple",
+          "symbol": "star",
+          "visualCode": "purple_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond_copy_01",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "blue_drop",
+          "color": "blue",
+          "symbol": "drop",
+          "visualCode": "blue_drop"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "orange_key",
+          "color": "orange",
+          "symbol": "key",
+          "visualCode": "orange_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        }
+      },
+      {
+        "book": {
+          "id": "purple_diamond",
+          "color": "purple",
+          "symbol": "diamond",
+          "visualCode": "purple_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 5
+        }
+      }
+    ],
+    "swapHistory": [
+      {
+        "stepIndex": 0,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "purple_star",
+        "secondBookIdBeforeSwap": "blue_key"
+      },
+      {
+        "stepIndex": 1,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "blue_key",
+        "secondBookIdBeforeSwap": "red_cloud"
+      },
+      {
+        "stepIndex": 2,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 4
+        },
+        "firstBookIdBeforeSwap": "red_cloud",
+        "secondBookIdBeforeSwap": "blue_drop"
+      },
+      {
+        "stepIndex": 3,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "blue_drop",
+        "secondBookIdBeforeSwap": "green_diamond_copy_02"
+      },
+      {
+        "stepIndex": 4,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 4
+        },
+        "firstBookIdBeforeSwap": "green_diamond_copy_02",
+        "secondBookIdBeforeSwap": "blue_moon"
+      },
+      {
+        "stepIndex": 5,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 5
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "blue_moon",
+        "secondBookIdBeforeSwap": "green_moon_copy_02"
+      }
+    ],
+    "initialSatisfiedClueCount": 0,
+    "initialUnsatisfiedClueCount": 6,
+    "minimumVisualSwapDistance": 6,
+    "solution": {
+      "distinctVisualSolutionCount": 32,
+      "solutionCountExact": false,
+      "solverVisitedNodes": 337,
+      "reachedNodeLimit": false,
+      "reachedSolutionLimit": true,
+      "targetSignatureFound": true
+    }
+  },
+  {
+    "level": 281,
+    "generatorVersion": 2,
+    "stageSeed": 2496737945,
+    "stageSpec": {
+      "generationKey": {
+        "generatorVersion": 2,
+        "level": 281,
+        "attempt": 0
+      },
+      "seed": 2496737945,
+      "profileId": "vertical_three_tier_3x4",
+      "tierCount": 3,
+      "booksPerTier": 4,
+      "totalBookCount": 12,
+      "clueCount": 7,
+      "targetSwapCount": 7,
+      "duplicateGroupCount": 2,
+      "maxDuplicateCopies": 2
+    },
+    "profileId": "vertical_three_tier_3x4",
+    "templateId": "t06_vertical_pair",
+    "preferredAttempt": 6,
+    "generationAttempt": 6,
+    "generationAttemptSeed": 2530293183,
+    "targetPlacements": [
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud_copy_01",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud_copy_02",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "blue_star_copy_01",
+          "color": "blue",
+          "symbol": "star",
+          "visualCode": "blue_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "blue_star_copy_02",
+          "color": "blue",
+          "symbol": "star",
+          "visualCode": "blue_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "orange_sun",
+          "color": "orange",
+          "symbol": "sun",
+          "visualCode": "orange_sun"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "red_moon",
+          "color": "red",
+          "symbol": "moon",
+          "visualCode": "red_moon"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "orange_diamond",
+          "color": "orange",
+          "symbol": "diamond",
+          "visualCode": "orange_diamond"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "purple_key",
+          "color": "purple",
+          "symbol": "key",
+          "visualCode": "purple_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "clues": [
+      {
+        "id": "t06_c08_00_purple_drop_immediately_above_blue_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "purple_drop"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_01_blue_key_immediately_above_red_moon",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "red_moon"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_02_green_leaf_immediately_above_orange_sun",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "orange_sun"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_03_orange_sun_immediately_above_purple_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "orange_sun"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "purple_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c09_04_visual_yellow_cloud_not_at_edge_tier_0",
+        "type": "not_at_edge",
+        "subject": {
+          "type": "visual",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "tierIndex": 0
+      },
+      {
+        "id": "t06_c04_05_purple_drop_left_of_green_leaf_tier_0",
+        "type": "relative_order",
+        "subject": {
+          "type": "book_id",
+          "bookId": "purple_drop"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "green_leaf"
+        },
+        "tierIndex": 0,
+        "relation": "left_of"
+      },
+      {
+        "id": "t06_c07_06_red_moon_same_tier_as_purple_key",
+        "type": "same_tier",
+        "first": {
+          "type": "book_id",
+          "bookId": "red_moon"
+        },
+        "second": {
+          "type": "book_id",
+          "bookId": "purple_key"
+        }
+      }
+    ],
+    "scrambleSeed": 1165185491,
+    "initialPlacements": [
+      {
+        "book": {
+          "id": "green_leaf",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud_copy_01",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud_copy_02",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "blue_star_copy_01",
+          "color": "blue",
+          "symbol": "star",
+          "visualCode": "blue_star"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "purple_key",
+          "color": "purple",
+          "symbol": "key",
+          "visualCode": "purple_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "orange_sun",
+          "color": "orange",
+          "symbol": "sun",
+          "visualCode": "orange_sun"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "red_moon",
+          "color": "red",
+          "symbol": "moon",
+          "visualCode": "red_moon"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "blue_star_copy_02",
+          "color": "blue",
+          "symbol": "star",
+          "visualCode": "blue_star"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "orange_diamond",
+          "color": "orange",
+          "symbol": "diamond",
+          "visualCode": "orange_diamond"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "swapHistory": [
+      {
+        "stepIndex": 0,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        },
+        "firstBookIdBeforeSwap": "blue_star_copy_02",
+        "secondBookIdBeforeSwap": "orange_diamond"
+      },
+      {
+        "stepIndex": 1,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "orange_diamond",
+        "secondBookIdBeforeSwap": "red_key"
+      },
+      {
+        "stepIndex": 2,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "red_key",
+        "secondBookIdBeforeSwap": "yellow_cloud_copy_02"
+      },
+      {
+        "stepIndex": 3,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "yellow_cloud_copy_02",
+        "secondBookIdBeforeSwap": "green_leaf"
+      },
+      {
+        "stepIndex": 4,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "green_leaf",
+        "secondBookIdBeforeSwap": "purple_drop"
+      },
+      {
+        "stepIndex": 5,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "purple_drop",
+        "secondBookIdBeforeSwap": "blue_key"
+      },
+      {
+        "stepIndex": 6,
+        "firstPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "blue_key",
+        "secondBookIdBeforeSwap": "purple_key"
+      }
+    ],
+    "initialSatisfiedClueCount": 0,
+    "initialUnsatisfiedClueCount": 7,
+    "minimumVisualSwapDistance": 7,
+    "solution": {
+      "distinctVisualSolutionCount": 12,
+      "solutionCountExact": true,
+      "solverVisitedNodes": 102,
+      "reachedNodeLimit": false,
+      "reachedSolutionLimit": false,
+      "targetSignatureFound": true
+    }
+  },
+  {
+    "level": 321,
+    "generatorVersion": 2,
+    "stageSeed": 3122699240,
+    "stageSpec": {
+      "generationKey": {
+        "generatorVersion": 2,
+        "level": 321,
+        "attempt": 0
+      },
+      "seed": 3122699240,
+      "profileId": "full_advanced_3x4",
+      "tierCount": 3,
+      "booksPerTier": 4,
+      "totalBookCount": 12,
+      "clueCount": 7,
+      "targetSwapCount": 7,
+      "duplicateGroupCount": 2,
+      "maxDuplicateCopies": 2
+    },
+    "profileId": "full_advanced_3x4",
+    "templateId": "t06_vertical_pair",
+    "preferredAttempt": 0,
+    "generationAttempt": 0,
+    "generationAttemptSeed": 3122699240,
+    "targetPlacements": [
+      {
+        "book": {
+          "id": "yellow_drop",
+          "color": "yellow",
+          "symbol": "drop",
+          "visualCode": "yellow_drop"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf_copy_01",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf_copy_02",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "orange_leaf",
+          "color": "orange",
+          "symbol": "leaf",
+          "visualCode": "orange_leaf"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_01",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_02",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_moon",
+          "color": "yellow",
+          "symbol": "moon",
+          "visualCode": "yellow_moon"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_key",
+          "color": "yellow",
+          "symbol": "key",
+          "visualCode": "yellow_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "blue_leaf",
+          "color": "blue",
+          "symbol": "leaf",
+          "visualCode": "blue_leaf"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "clues": [
+      {
+        "id": "t06_c08_00_yellow_drop_immediately_above_orange_leaf",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "yellow_drop"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "orange_leaf"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_01_orange_leaf_immediately_above_yellow_moon",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "orange_leaf"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "yellow_moon"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_02_green_diamond_immediately_above_yellow_cloud",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "yellow_cloud"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_03_yellow_cloud_immediately_above_blue_leaf",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "yellow_cloud"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_leaf"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c09_04_visual_green_leaf_not_at_edge_tier_0",
+        "type": "not_at_edge",
+        "subject": {
+          "type": "visual",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "tierIndex": 0
+      },
+      {
+        "id": "t06_c10_05_yellow_drop_2_between_green_diamond_tier_0",
+        "type": "distance",
+        "first": {
+          "type": "book_id",
+          "bookId": "yellow_drop"
+        },
+        "second": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "tierIndex": 0,
+        "booksBetween": 2
+      },
+      {
+        "id": "t06_c04_06_yellow_drop_left_of_green_diamond_tier_0",
+        "type": "relative_order",
+        "subject": {
+          "type": "book_id",
+          "bookId": "yellow_drop"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "tierIndex": 0,
+        "relation": "left_of"
+      }
+    ],
+    "scrambleSeed": 1770192772,
+    "initialPlacements": [
+      {
+        "book": {
+          "id": "red_key_copy_02",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "orange_leaf",
+          "color": "orange",
+          "symbol": "leaf",
+          "visualCode": "orange_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf_copy_02",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_key",
+          "color": "yellow",
+          "symbol": "key",
+          "visualCode": "yellow_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_cloud",
+          "color": "yellow",
+          "symbol": "cloud",
+          "visualCode": "yellow_cloud"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_01",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "green_leaf_copy_01",
+          "color": "green",
+          "symbol": "leaf",
+          "visualCode": "green_leaf"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_moon",
+          "color": "yellow",
+          "symbol": "moon",
+          "visualCode": "yellow_moon"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_drop",
+          "color": "yellow",
+          "symbol": "drop",
+          "visualCode": "yellow_drop"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "blue_leaf",
+          "color": "blue",
+          "symbol": "leaf",
+          "visualCode": "blue_leaf"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "swapHistory": [
+      {
+        "stepIndex": 0,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "green_leaf_copy_01",
+        "secondBookIdBeforeSwap": "red_key_copy_02"
+      },
+      {
+        "stepIndex": 1,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "red_key_copy_02",
+        "secondBookIdBeforeSwap": "yellow_drop"
+      },
+      {
+        "stepIndex": 2,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "yellow_drop",
+        "secondBookIdBeforeSwap": "yellow_key"
+      },
+      {
+        "stepIndex": 3,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "yellow_key",
+        "secondBookIdBeforeSwap": "green_diamond"
+      },
+      {
+        "stepIndex": 4,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "green_diamond",
+        "secondBookIdBeforeSwap": "yellow_moon"
+      },
+      {
+        "stepIndex": 5,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "yellow_moon",
+        "secondBookIdBeforeSwap": "yellow_cloud"
+      },
+      {
+        "stepIndex": 6,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "yellow_cloud",
+        "secondBookIdBeforeSwap": "orange_leaf"
+      }
+    ],
+    "initialSatisfiedClueCount": 0,
+    "initialUnsatisfiedClueCount": 7,
+    "minimumVisualSwapDistance": 7,
+    "solution": {
+      "distinctVisualSolutionCount": 12,
+      "solutionCountExact": true,
+      "solverVisitedNodes": 104,
+      "reachedNodeLimit": false,
+      "reachedSolutionLimit": false,
+      "targetSignatureFound": true
+    }
+  },
+  {
+    "level": 400,
+    "generatorVersion": 2,
+    "stageSeed": 4245720908,
+    "stageSpec": {
+      "generationKey": {
+        "generatorVersion": 2,
+        "level": 400,
+        "attempt": 0
+      },
+      "seed": 4245720908,
+      "profileId": "full_advanced_3x4",
+      "tierCount": 3,
+      "booksPerTier": 4,
+      "totalBookCount": 12,
+      "clueCount": 7,
+      "targetSwapCount": 7,
+      "duplicateGroupCount": 2,
+      "maxDuplicateCopies": 2
+    },
+    "profileId": "full_advanced_3x4",
+    "templateId": "t06_vertical_pair",
+    "preferredAttempt": 0,
+    "generationAttempt": 0,
+    "generationAttemptSeed": 4245720908,
+    "targetPlacements": [
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud_copy_01",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud_copy_02",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "red_diamond",
+          "color": "red",
+          "symbol": "diamond",
+          "visualCode": "red_diamond"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "blue_drop",
+          "color": "blue",
+          "symbol": "drop",
+          "visualCode": "blue_drop"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_01",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_02",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "blue_cloud",
+          "color": "blue",
+          "symbol": "cloud",
+          "visualCode": "blue_cloud"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_diamond",
+          "color": "yellow",
+          "symbol": "diamond",
+          "visualCode": "yellow_diamond"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_key",
+          "color": "yellow",
+          "symbol": "key",
+          "visualCode": "yellow_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "clues": [
+      {
+        "id": "t06_c08_00_blue_key_immediately_above_blue_drop",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "blue_drop"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_01_blue_drop_immediately_above_purple_drop",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "blue_drop"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "purple_drop"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_02_red_diamond_immediately_above_green_diamond",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "red_diamond"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c08_03_green_diamond_immediately_above_yellow_key",
+        "type": "vertical_relation",
+        "subject": {
+          "type": "book_id",
+          "bookId": "green_diamond"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "yellow_key"
+        },
+        "relation": "immediately_above"
+      },
+      {
+        "id": "t06_c09_04_visual_red_cloud_not_at_edge_tier_0",
+        "type": "not_at_edge",
+        "subject": {
+          "type": "visual",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "tierIndex": 0
+      },
+      {
+        "id": "t06_c10_05_blue_key_2_between_red_diamond_tier_0",
+        "type": "distance",
+        "first": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "second": {
+          "type": "book_id",
+          "bookId": "red_diamond"
+        },
+        "tierIndex": 0,
+        "booksBetween": 2
+      },
+      {
+        "id": "t06_c04_06_blue_key_left_of_red_diamond_tier_0",
+        "type": "relative_order",
+        "subject": {
+          "type": "book_id",
+          "bookId": "blue_key"
+        },
+        "reference": {
+          "type": "book_id",
+          "bookId": "red_diamond"
+        },
+        "tierIndex": 0,
+        "relation": "left_of"
+      }
+    ],
+    "scrambleSeed": 783477536,
+    "initialPlacements": [
+      {
+        "book": {
+          "id": "blue_drop",
+          "color": "blue",
+          "symbol": "drop",
+          "visualCode": "blue_drop"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_diamond",
+          "color": "red",
+          "symbol": "diamond",
+          "visualCode": "red_diamond"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud_copy_02",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_key",
+          "color": "yellow",
+          "symbol": "key",
+          "visualCode": "yellow_key"
+        },
+        "position": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "yellow_diamond",
+          "color": "yellow",
+          "symbol": "diamond",
+          "visualCode": "yellow_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "red_cloud_copy_01",
+          "color": "red",
+          "symbol": "cloud",
+          "visualCode": "red_cloud"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_02",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "green_diamond",
+          "color": "green",
+          "symbol": "diamond",
+          "visualCode": "green_diamond"
+        },
+        "position": {
+          "tierIndex": 1,
+          "slotIndex": 3
+        }
+      },
+      {
+        "book": {
+          "id": "blue_key",
+          "color": "blue",
+          "symbol": "key",
+          "visualCode": "blue_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        }
+      },
+      {
+        "book": {
+          "id": "blue_cloud",
+          "color": "blue",
+          "symbol": "cloud",
+          "visualCode": "blue_cloud"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 1
+        }
+      },
+      {
+        "book": {
+          "id": "red_key_copy_01",
+          "color": "red",
+          "symbol": "key",
+          "visualCode": "red_key"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        }
+      },
+      {
+        "book": {
+          "id": "purple_drop",
+          "color": "purple",
+          "symbol": "drop",
+          "visualCode": "purple_drop"
+        },
+        "position": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        }
+      }
+    ],
+    "swapHistory": [
+      {
+        "stepIndex": 0,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 1
+        },
+        "firstBookIdBeforeSwap": "red_diamond",
+        "secondBookIdBeforeSwap": "red_cloud_copy_01"
+      },
+      {
+        "stepIndex": 1,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 1
+        },
+        "firstBookIdBeforeSwap": "red_cloud_copy_01",
+        "secondBookIdBeforeSwap": "red_key_copy_01"
+      },
+      {
+        "stepIndex": 2,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 2
+        },
+        "firstBookIdBeforeSwap": "red_key_copy_01",
+        "secondBookIdBeforeSwap": "yellow_diamond"
+      },
+      {
+        "stepIndex": 3,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 1,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "yellow_diamond",
+        "secondBookIdBeforeSwap": "blue_drop"
+      },
+      {
+        "stepIndex": 4,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 0,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "blue_drop",
+        "secondBookIdBeforeSwap": "blue_key"
+      },
+      {
+        "stepIndex": 5,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 0
+        },
+        "firstBookIdBeforeSwap": "blue_key",
+        "secondBookIdBeforeSwap": "purple_drop"
+      },
+      {
+        "stepIndex": 6,
+        "firstPosition": {
+          "tierIndex": 0,
+          "slotIndex": 3
+        },
+        "secondPosition": {
+          "tierIndex": 2,
+          "slotIndex": 3
+        },
+        "firstBookIdBeforeSwap": "purple_drop",
+        "secondBookIdBeforeSwap": "yellow_key"
+      }
+    ],
+    "initialSatisfiedClueCount": 0,
+    "initialUnsatisfiedClueCount": 7,
+    "minimumVisualSwapDistance": 7,
+    "solution": {
+      "distinctVisualSolutionCount": 12,
+      "solutionCountExact": true,
+      "solverVisitedNodes": 73,
+      "reachedNodeLimit": false,
+      "reachedSolutionLimit": false,
+      "targetSignatureFound": true
+    }
+  }
+]

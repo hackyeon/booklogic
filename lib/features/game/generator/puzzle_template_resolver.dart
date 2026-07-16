@@ -4,11 +4,20 @@ import 'stage_spec.dart';
 class PuzzleTemplateResolver {
   const PuzzleTemplateResolver();
 
-  PuzzleTemplateId resolve(StageSpec spec) {
-    if (spec.generatorVersion != 1) {
+  PuzzleTemplateId resolve(StageSpec spec, {int? generatorVersion}) {
+    final effectiveVersion = generatorVersion ?? spec.generatorVersion;
+    if (effectiveVersion == 2) {
+      if (spec.level >= 201 && spec.level <= 400) {
+        return PuzzleTemplateId.t06VerticalPair;
+      }
+      throw UnsupportedError(
+        'StageGenerator does not support level ${spec.level}.',
+      );
+    }
+    if (effectiveVersion != 1) {
       throw UnsupportedError(
         'PuzzleTemplateResolver does not support generatorVersion '
-        '${spec.generatorVersion}.',
+        '$effectiveVersion.',
       );
     }
     final level = spec.level;
@@ -20,6 +29,12 @@ class PuzzleTemplateResolver {
         return PuzzleTemplateId.t03AdjacentBlocks;
       }
       return PuzzleTemplateId.t02EdgeSandwich;
+    }
+    if (level >= 51 && level <= 100) {
+      return PuzzleTemplateId.t04TierGrouping;
+    }
+    if (level >= 101 && level <= 200) {
+      return PuzzleTemplateId.t05TierOrder;
     }
     throw UnsupportedError('StageGenerator does not support level $level.');
   }

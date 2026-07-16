@@ -7,6 +7,8 @@ enum HorizontalRelation { leftOf, rightOf }
 
 enum AdjacentDirection { immediatelyLeftOf, immediatelyRightOf }
 
+enum VerticalRelation { immediatelyAbove, immediatelyBelow }
+
 sealed class Clue {
   const Clue({required this.id}) : assert(id.length > 0);
 
@@ -170,6 +172,71 @@ final class BetweenClue extends Clue {
   }
 }
 
+final class TierAssignmentClue extends Clue {
+  const TierAssignmentClue({
+    required super.id,
+    required this.subject,
+    required this.tierIndex,
+  }) : assert(tierIndex >= 0);
+
+  final BookSelector subject;
+  final int tierIndex;
+
+  @override
+  ClueType get type => ClueType.tierAssignment;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is TierAssignmentClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            subject == other.subject &&
+            tierIndex == other.tierIndex;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, subject, tierIndex);
+
+  @override
+  String toString() {
+    return 'TierAssignmentClue(id: $id, subject: $subject, '
+        'tierIndex: $tierIndex)';
+  }
+}
+
+final class SameTierClue extends Clue {
+  const SameTierClue({
+    required super.id,
+    required this.first,
+    required this.second,
+  });
+
+  final BookSelector first;
+  final BookSelector second;
+
+  @override
+  ClueType get type => ClueType.sameTier;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is SameTierClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            first == other.first &&
+            second == other.second;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, first, second);
+
+  @override
+  String toString() {
+    return 'SameTierClue(id: $id, first: $first, second: $second)';
+  }
+}
+
 final class AdjacentClue extends Clue {
   const AdjacentClue({
     required super.id,
@@ -215,5 +282,118 @@ final class AdjacentClue extends Clue {
   String toString() {
     return 'AdjacentClue(id: $id, subject: $subject, reference: $reference, '
         'tierIndex: $tierIndex, direction: $direction)';
+  }
+}
+
+final class VerticalRelationClue extends Clue {
+  const VerticalRelationClue({
+    required super.id,
+    required this.subject,
+    required this.reference,
+    required this.relation,
+  });
+
+  final BookSelector subject;
+  final BookSelector reference;
+  final VerticalRelation relation;
+
+  @override
+  ClueType get type => ClueType.verticalRelation;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is VerticalRelationClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            subject == other.subject &&
+            reference == other.reference &&
+            relation == other.relation;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, id, subject, reference, relation);
+  }
+
+  @override
+  String toString() {
+    return 'VerticalRelationClue(id: $id, subject: $subject, '
+        'reference: $reference, relation: $relation)';
+  }
+}
+
+final class NotAtEdgeClue extends Clue {
+  const NotAtEdgeClue({
+    required super.id,
+    required this.subject,
+    required this.tierIndex,
+  }) : assert(tierIndex >= 0);
+
+  final BookSelector subject;
+  final int tierIndex;
+
+  @override
+  ClueType get type => ClueType.notAtEdge;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is NotAtEdgeClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            subject == other.subject &&
+            tierIndex == other.tierIndex;
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, subject, tierIndex);
+
+  @override
+  String toString() {
+    return 'NotAtEdgeClue(id: $id, subject: $subject, '
+        'tierIndex: $tierIndex)';
+  }
+}
+
+final class DistanceClue extends Clue {
+  const DistanceClue({
+    required super.id,
+    required this.first,
+    required this.second,
+    required this.tierIndex,
+    required this.booksBetween,
+  }) : assert(tierIndex >= 0),
+       assert(booksBetween >= 1);
+
+  final BookSelector first;
+  final BookSelector second;
+  final int tierIndex;
+  final int booksBetween;
+
+  @override
+  ClueType get type => ClueType.distance;
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        other is DistanceClue &&
+            runtimeType == other.runtimeType &&
+            id == other.id &&
+            first == other.first &&
+            second == other.second &&
+            tierIndex == other.tierIndex &&
+            booksBetween == other.booksBetween;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(runtimeType, id, first, second, tierIndex, booksBetween);
+  }
+
+  @override
+  String toString() {
+    return 'DistanceClue(id: $id, first: $first, second: $second, '
+        'tierIndex: $tierIndex, booksBetween: $booksBetween)';
   }
 }

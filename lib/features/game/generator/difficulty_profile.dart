@@ -9,6 +9,10 @@ enum DifficultyProfileId {
   twoTierFive,
   twelveBookMixed,
   advancedEndless,
+  verticalIntro2x6,
+  verticalNegative2x6,
+  verticalThreeTier3x4,
+  fullAdvanced3x4,
 }
 
 class DifficultyProfile {

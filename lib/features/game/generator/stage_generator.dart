@@ -1,12 +1,14 @@
 import 'generated_stage.dart';
 import 'generator_config.dart';
-import 'puzzle_template_id.dart';
+import 'generator_version_policy.dart';
 import 'puzzle_template_resolver.dart';
+import 'quality/generator_v1_quality_manifest.dart';
+import 'quality/generator_v2_quality_manifest.dart';
+import 'stage_candidate_builder_router.dart';
 import 'stage_generation_attempt_failure.dart';
 import 'stage_generation_exception.dart';
 import 'stage_generation_key.dart';
 import 'stage_seed_factory.dart';
-import 'stage_spec.dart';
 import 'stage_spec_factory.dart';
 import 't01_fallback_stage_factory.dart';
 import 't01_stage_attempt_builder.dart';
@@ -14,6 +16,12 @@ import 't02_fallback_stage_factory.dart';
 import 't02_stage_attempt_builder.dart';
 import 't03_fallback_stage_factory.dart';
 import 't03_stage_attempt_builder.dart';
+import 't04_fallback_stage_factory.dart';
+import 't04_stage_attempt_builder.dart';
+import 't05_fallback_stage_factory.dart';
+import 't05_stage_attempt_builder.dart';
+import 't06_fallback_stage_factory.dart';
+import 't06_stage_attempt_builder.dart';
 
 class StageGenerator {
   const StageGenerator({
@@ -26,6 +34,13 @@ class StageGenerator {
     this.t02FallbackFactory = const T02FallbackStageFactory(),
     this.t03AttemptBuilder = const T03StageAttemptBuilder(),
     this.t03FallbackFactory = const T03FallbackStageFactory(),
+    this.t04AttemptBuilder = const T04StageAttemptBuilder(),
+    this.t04FallbackFactory = const T04FallbackStageFactory(),
+    this.t05AttemptBuilder = const T05StageAttemptBuilder(),
+    this.t05FallbackFactory = const T05FallbackStageFactory(),
+    this.t06AttemptBuilder = const T06StageAttemptBuilder(),
+    this.t06FallbackFactory = const T06FallbackStageFactory(),
+    this.versionPolicy = const GeneratorVersionPolicy(),
     this.maxAttempts = 8,
   });
 
@@ -38,22 +53,20 @@ class StageGenerator {
   final T02FallbackStageFactory t02FallbackFactory;
   final T03StageAttemptBuilder t03AttemptBuilder;
   final T03FallbackStageFactory t03FallbackFactory;
+  final T04StageAttemptBuilder t04AttemptBuilder;
+  final T04FallbackStageFactory t04FallbackFactory;
+  final T05StageAttemptBuilder t05AttemptBuilder;
+  final T05FallbackStageFactory t05FallbackFactory;
+  final T06StageAttemptBuilder t06AttemptBuilder;
+  final T06FallbackStageFactory t06FallbackFactory;
+  final GeneratorVersionPolicy versionPolicy;
   final int maxAttempts;
 
   GeneratedStage generate({
     required int level,
     int generatorVersion = GeneratorConfig.currentVersion,
   }) {
-    if (level < 1) {
-      throw ArgumentError.value(level, 'level', '1 이상이어야 합니다.');
-    }
-    if (generatorVersion < 1) {
-      throw ArgumentError.value(
-        generatorVersion,
-        'generatorVersion',
-        '1 이상이어야 합니다.',
-      );
-    }
+    versionPolicy.validate(level: level, generatorVersion: generatorVersion);
     if (maxAttempts < 1) {
       throw ArgumentError.value(maxAttempts, 'maxAttempts', '1 이상이어야 합니다.');
     }
@@ -62,203 +75,107 @@ class StageGenerator {
       level: level,
       generatorVersion: generatorVersion,
     );
-    final templateId = templateResolver.resolve(stageSpec);
-    return switch (templateId) {
-      PuzzleTemplateId.t01AnchorChain => _generateT01(
-        stageSpec: stageSpec,
+    templateResolver.resolve(stageSpec, generatorVersion: generatorVersion);
+
+    final preferredAttempt = _preferredAttempt(
+      level: level,
+      generatorVersion: generatorVersion,
+    );
+    final router = _router();
+    final failures = <StageGenerationAttemptFailure>[];
+    for (final attempt in _attemptOrder(preferredAttempt)) {
+      final seed = seedFactory.create(
+        StageGenerationKey(
+          generatorVersion: stageSpec.generatorVersion,
+          level: stageSpec.level,
+          attempt: attempt,
+        ),
+      );
+      try {
+        return router.buildAttempt(
+          stageSpec: stageSpec,
+          generationAttempt: attempt,
+        );
+      } on StateError catch (error) {
+        failures.add(
+          StageGenerationAttemptFailure(
+            attempt: attempt,
+            seed: seed,
+            message: error.toString(),
+          ),
+        );
+      } on ArgumentError catch (error) {
+        failures.add(
+          StageGenerationAttemptFailure(
+            attempt: attempt,
+            seed: seed,
+            message: error.toString(),
+          ),
+        );
+      }
+    }
+
+    try {
+      return router.buildFallback(stageSpec: stageSpec);
+    } on StateError catch (error) {
+      throw StageGenerationException(
         level: level,
         generatorVersion: generatorVersion,
-      ),
-      PuzzleTemplateId.t02EdgeSandwich => _generateT02(
-        stageSpec: stageSpec,
+        failures: failures,
+        fallbackMessage: error.toString(),
+      );
+    } on ArgumentError catch (error) {
+      throw StageGenerationException(
         level: level,
         generatorVersion: generatorVersion,
-      ),
-      PuzzleTemplateId.t03AdjacentBlocks => _generateT03(
-        stageSpec: stageSpec,
-        level: level,
-        generatorVersion: generatorVersion,
-      ),
+        failures: failures,
+        fallbackMessage: error.toString(),
+      );
+    }
+  }
+
+  int _preferredAttempt({required int level, required int generatorVersion}) {
+    final preferredAttempt = switch (generatorVersion) {
+      GeneratorConfig.generatorVersion1 =>
+        GeneratorV1QualityManifest.preferredAttemptByLevel[level],
+      GeneratorConfig.generatorVersion2 =>
+        GeneratorV2QualityManifest.preferredAttemptByLevel[level],
+      _ => null,
     };
+    if (preferredAttempt == null) {
+      throw UnsupportedError('StageGenerator does not support level $level.');
+    }
+    return preferredAttempt;
   }
 
-  GeneratedStage _generateT01({
-    required StageSpec stageSpec,
-    required int level,
-    required int generatorVersion,
-  }) {
-    final failures = <StageGenerationAttemptFailure>[];
-    for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
-      final key = StageGenerationKey(
-        generatorVersion: generatorVersion,
-        level: level,
-        attempt: attempt,
-      );
-      final seed = seedFactory.create(key);
-      try {
-        return attemptBuilder.build(
-          stageSpec: stageSpec,
-          generationAttemptKey: key,
-          generationAttemptSeed: seed,
-        );
-      } on StateError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      } on ArgumentError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      }
+  Iterable<int> _attemptOrder(int preferredAttempt) sync* {
+    if (preferredAttempt >= 0 && preferredAttempt < maxAttempts) {
+      yield preferredAttempt;
     }
-
-    try {
-      return fallbackFactory.create(
-        stageSpec: stageSpec,
-        fallbackAttempt: maxAttempts,
-      );
-    } on StateError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
-    } on ArgumentError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
+    for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (attempt != preferredAttempt) {
+        yield attempt;
+      }
     }
   }
 
-  GeneratedStage _generateT02({
-    required StageSpec stageSpec,
-    required int level,
-    required int generatorVersion,
-  }) {
-    final failures = <StageGenerationAttemptFailure>[];
-    for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
-      final key = StageGenerationKey(
-        generatorVersion: generatorVersion,
-        level: level,
-        attempt: attempt,
-      );
-      final seed = seedFactory.create(key);
-      try {
-        return t02AttemptBuilder.build(
-          stageSpec: stageSpec,
-          generationAttemptKey: key,
-          generationAttemptSeed: seed,
-        );
-      } on StateError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      } on ArgumentError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      }
-    }
-
-    try {
-      return t02FallbackFactory.create(
-        stageSpec: stageSpec,
-        fallbackAttempt: maxAttempts,
-      );
-    } on StateError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
-    } on ArgumentError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
-    }
-  }
-
-  GeneratedStage _generateT03({
-    required StageSpec stageSpec,
-    required int level,
-    required int generatorVersion,
-  }) {
-    final failures = <StageGenerationAttemptFailure>[];
-    for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
-      final key = StageGenerationKey(
-        generatorVersion: generatorVersion,
-        level: level,
-        attempt: attempt,
-      );
-      final seed = seedFactory.create(key);
-      try {
-        return t03AttemptBuilder.build(
-          stageSpec: stageSpec,
-          generationAttemptKey: key,
-          generationAttemptSeed: seed,
-        );
-      } on StateError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      } on ArgumentError catch (error) {
-        failures.add(
-          StageGenerationAttemptFailure(
-            attempt: attempt,
-            seed: seed,
-            message: error.toString(),
-          ),
-        );
-      }
-    }
-
-    try {
-      return t03FallbackFactory.create(
-        stageSpec: stageSpec,
-        fallbackAttempt: maxAttempts,
-      );
-    } on StateError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
-    } on ArgumentError catch (error) {
-      throw StageGenerationException(
-        level: level,
-        generatorVersion: generatorVersion,
-        failures: failures,
-        fallbackMessage: error.toString(),
-      );
-    }
+  StageCandidateBuilderRouter _router() {
+    return StageCandidateBuilderRouter(
+      templateResolver: templateResolver,
+      seedFactory: seedFactory,
+      t01Builder: attemptBuilder,
+      t02Builder: t02AttemptBuilder,
+      t03Builder: t03AttemptBuilder,
+      t04Builder: t04AttemptBuilder,
+      t05Builder: t05AttemptBuilder,
+      t06Builder: t06AttemptBuilder,
+      t01FallbackFactory: fallbackFactory,
+      t02FallbackFactory: t02FallbackFactory,
+      t03FallbackFactory: t03FallbackFactory,
+      t04FallbackFactory: t04FallbackFactory,
+      t05FallbackFactory: t05FallbackFactory,
+      t06FallbackFactory: t06FallbackFactory,
+      fallbackAttempt: maxAttempts,
+    );
   }
 }

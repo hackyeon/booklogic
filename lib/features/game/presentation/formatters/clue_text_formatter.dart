@@ -29,6 +29,11 @@ class ClueTextFormatter {
       BetweenClue(:final subject, :final boundary, :final tierIndex) =>
         '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에서 '
             '두 ${_selectorColorText(boundary)} 책 사이에 있다.',
+      TierAssignmentClue(:final subject, :final tierIndex) =>
+        '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에 있다.',
+      SameTierClue(:final first, :final second) =>
+        '${_subjectText(first, books)}과 ${_subjectText(second, books)}은 '
+            '같은 단에 있다.',
       AdjacentClue(
         :final subject,
         :final reference,
@@ -37,6 +42,15 @@ class ClueTextFormatter {
       ) =>
         '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}에서 '
             '${_adjacentReferenceText(reference, books)} 바로 ${_adjacentText(direction)}에 있다.',
+      VerticalRelationClue(:final subject, :final reference, :final relation) =>
+        '${_subjectText(subject, books)}은 ${_referenceText(reference, books)} '
+            '바로 ${_verticalRelationText(relation)}에 있다.',
+      NotAtEdgeClue(:final subject, :final tierIndex) =>
+        '${_subjectText(subject, books)}은 ${_tierLabel(tierIndex)}의 '
+            '끝 칸에 있지 않다.',
+      DistanceClue(:final first, :final second, :final booksBetween) =>
+        '${_subjectText(first, books)}과 ${_subjectText(second, books)} '
+            '사이에는 책이 ${_bookCountText(booksBetween)} 있다.',
     };
   }
 
@@ -78,6 +92,22 @@ class ClueTextFormatter {
     return switch (direction) {
       AdjacentDirection.immediatelyLeftOf => '왼쪽',
       AdjacentDirection.immediatelyRightOf => '오른쪽',
+    };
+  }
+
+  String _verticalRelationText(VerticalRelation relation) {
+    return switch (relation) {
+      VerticalRelation.immediatelyAbove => '위',
+      VerticalRelation.immediatelyBelow => '아래',
+    };
+  }
+
+  String _bookCountText(int count) {
+    return switch (count) {
+      1 => '한 권',
+      2 => '두 권',
+      3 => '세 권',
+      _ => '$count권',
     };
   }
 

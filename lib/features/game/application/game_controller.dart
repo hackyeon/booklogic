@@ -69,6 +69,10 @@ class GameController extends ChangeNotifier {
     required ClueEvaluator clueEvaluator,
   }) : _level = _validateLevel(level),
        _generatedStage = generatedStage,
+       _layout = _validatePlacementLayout(
+         initialPlacements: initialPlacements,
+         generatedStage: generatedStage,
+       ),
        _initialPlacements = List<BookPlacement>.unmodifiable(
          List<BookPlacement>.of(initialPlacements),
        ),
@@ -81,6 +85,7 @@ class GameController extends ChangeNotifier {
 
   final int _level;
   final GeneratedStage? _generatedStage;
+  final _BookshelfLayoutInfo _layout;
   final List<BookPlacement> _initialPlacements;
   List<BookPlacement> _placements;
   final List<Clue> _clues;
@@ -125,12 +130,16 @@ class GameController extends ChangeNotifier {
     return _generatedStage?.generatorVersion ?? GeneratorConfig.currentVersion;
   }
 
+  int get tierCount {
+    return _generatedStage?.tierCount ?? _layout.tierCount;
+  }
+
   int get booksPerTier {
-    final stage = _generatedStage;
-    if (stage != null) {
-      return stage.booksPerTier;
-    }
-    return _initialPlacements.length;
+    return _generatedStage?.booksPerTier ?? _layout.booksPerTier;
+  }
+
+  int get totalBookCount {
+    return _placements.length;
   }
 
   Set<String> get satisfiedClueIds {
@@ -176,6 +185,19 @@ class GameController extends ChangeNotifier {
 
   int get boardRevision => _boardRevision;
 
+  bool get isShelfGlowing {
+    if (_status == GameStatus.cleared) {
+      return true;
+    }
+    final activeBookId = clearActiveBookId;
+    if (_status != GameStatus.clearing || activeBookId == null) {
+      return false;
+    }
+    final orderedPlacements = _sortedPlacementsByPosition();
+    return orderedPlacements.isNotEmpty &&
+        orderedPlacements.last.book.id == activeBookId;
+  }
+
   String? get clearActiveBookId {
     if (_status != GameStatus.clearing || _clearStepIndex < 0) {
       return null;
@@ -190,6 +212,21 @@ class GameController extends ChangeNotifier {
 
   bool isClueSatisfied(String clueId) {
     return _satisfiedClueIds.contains(clueId);
+  }
+
+  List<BookPlacement> placementsForTier(int tierIndex) {
+    if (tierIndex < 0 || tierIndex >= tierCount) {
+      throw RangeError.range(tierIndex, 0, tierCount - 1, 'tierIndex');
+    }
+    final tierPlacements =
+        _placements
+            .where((placement) => placement.position.tierIndex == tierIndex)
+            .toList()
+          ..sort(
+            (left, right) =>
+                left.position.slotIndex.compareTo(right.position.slotIndex),
+          );
+    return List<BookPlacement>.unmodifiable(tierPlacements);
   }
 
   void handleBookTap(String bookId) {
@@ -432,4 +469,109 @@ int _validateLevel(int level) {
     throw ArgumentError.value(level, 'level', '1 이상이어야 합니다.');
   }
   return level;
+}
+
+_BookshelfLayoutInfo _validatePlacementLayout({
+  required List<BookPlacement> initialPlacements,
+  required GeneratedStage? generatedStage,
+}) {
+  if (initialPlacements.isEmpty) {
+    throw ArgumentError.value(
+      initialPlacements,
+      'initialPlacements',
+      '최소 한 권 이상의 책이 필요합니다.',
+    );
+  }
+
+  final bookIds = <String>{};
+  final positionKeys = <String>{};
+  var maxTierIndex = -1;
+  var maxSlotIndex = -1;
+
+  for (final placement in initialPlacements) {
+    final position = placement.position;
+    if (position.tierIndex < 0) {
+      throw ArgumentError.value(
+        position.tierIndex,
+        'tierIndex',
+        '0 이상이어야 합니다.',
+      );
+    }
+    if (position.slotIndex < 0) {
+      throw ArgumentError.value(
+        position.slotIndex,
+        'slotIndex',
+        '0 이상이어야 합니다.',
+      );
+    }
+    if (!bookIds.add(placement.book.id)) {
+      throw ArgumentError.value(
+        placement.book.id,
+        'initialPlacements',
+        'Book.id가 중복되었습니다.',
+      );
+    }
+    final positionKey = '${position.tierIndex}:${position.slotIndex}';
+    if (!positionKeys.add(positionKey)) {
+      throw ArgumentError.value(
+        positionKey,
+        'initialPlacements',
+        'BookPosition이 중복되었습니다.',
+      );
+    }
+    if (position.tierIndex > maxTierIndex) {
+      maxTierIndex = position.tierIndex;
+    }
+    if (position.slotIndex > maxSlotIndex) {
+      maxSlotIndex = position.slotIndex;
+    }
+  }
+
+  final tierCount = maxTierIndex + 1;
+  final booksPerTier = maxSlotIndex + 1;
+  if (tierCount < 1 || tierCount > 3) {
+    throw ArgumentError.value(tierCount, 'tierCount', '1부터 3 사이여야 합니다.');
+  }
+  if (booksPerTier < 1 || booksPerTier > 6) {
+    throw ArgumentError.value(booksPerTier, 'booksPerTier', '1부터 6 사이여야 합니다.');
+  }
+  if (initialPlacements.length != tierCount * booksPerTier) {
+    throw ArgumentError.value(
+      initialPlacements.length,
+      'initialPlacements',
+      '모든 단은 같은 booksPerTier를 빈 슬롯 없이 채워야 합니다.',
+    );
+  }
+
+  for (var tierIndex = 0; tierIndex < tierCount; tierIndex += 1) {
+    for (var slotIndex = 0; slotIndex < booksPerTier; slotIndex += 1) {
+      if (!positionKeys.contains('$tierIndex:$slotIndex')) {
+        throw ArgumentError.value(
+          '$tierIndex:$slotIndex',
+          'initialPlacements',
+          '연속된 BookPosition이 누락되었습니다.',
+        );
+      }
+    }
+  }
+
+  final stage = generatedStage;
+  if (stage != null &&
+      (stage.tierCount != tierCount ||
+          stage.booksPerTier != booksPerTier ||
+          stage.totalBookCount != initialPlacements.length)) {
+    throw StateError('GeneratedStage layout does not match initialPlacements.');
+  }
+
+  return _BookshelfLayoutInfo(tierCount: tierCount, booksPerTier: booksPerTier);
+}
+
+class _BookshelfLayoutInfo {
+  const _BookshelfLayoutInfo({
+    required this.tierCount,
+    required this.booksPerTier,
+  });
+
+  final int tierCount;
+  final int booksPerTier;
 }

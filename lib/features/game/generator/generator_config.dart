@@ -1,7 +1,15 @@
 abstract final class GeneratorConfig {
   static const String namespace = 'bookshelf_puzzle';
 
-  static const int currentVersion = 1;
+  static const int generatorVersion1 = 1;
+
+  static const int generatorVersion2 = 2;
+
+  static const int initialGeneratorVersion = generatorVersion1;
+
+  static const int latestGeneratorVersion = generatorVersion2;
+
+  static const int currentVersion = initialGeneratorVersion;
 
   static const int uint32Mask = 0xFFFFFFFF;
 
@@ -16,4 +24,10 @@ abstract final class GeneratorConfig {
   static const int t02ScrambleSalt = 0x85EBCA6B;
 
   static const int t03ScrambleSalt = 0xC2B2AE35;
+
+  static const int t04ScrambleSalt = 0x27D4EB2F;
+
+  static const int t05ScrambleSalt = 0x165667B1;
+
+  static const int t06ScrambleSalt = 0xD3A2646C;
 }
