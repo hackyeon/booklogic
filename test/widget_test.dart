@@ -5,6 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:booklogic/app/app.dart';
+import 'package:booklogic/core/ads/application/ad_session_coordinator.dart';
+import 'package:booklogic/core/ads/config/ad_runtime_config.dart';
+import 'package:booklogic/core/ads/interstitial/next_level_ad_gate.dart';
 import 'package:booklogic/core/constants/app_durations.dart';
 import 'package:booklogic/core/constants/app_strings.dart';
 import 'package:booklogic/core/feedback/application/app_feedback_settings_controller.dart';
@@ -43,6 +46,7 @@ import 'package:booklogic/features/game/tutorial/application/learning_progress_s
 import 'package:booklogic/features/game/tutorial/domain/learning_progress.dart';
 import 'package:booklogic/features/settings/presentation/settings_screen.dart';
 
+import 'helpers/fake_ad_services.dart';
 import 'helpers/fake_game_progress_store.dart';
 import 'helpers/fake_app_feedback_settings_store.dart';
 import 'helpers/fake_game_haptic_player.dart';
@@ -3094,6 +3098,125 @@ void main() {
     progressController.dispose();
   });
 
+  testWidgets('level 6 next transition asks ad gate after saving progress', (
+    tester,
+  ) async {
+    final store = FakeGameProgressStore(
+      progress: GameProgress(
+        schemaVersion: GameProgress.currentSchemaVersion,
+        currentLevel: 6,
+        highestUnlockedLevel: 6,
+        generatorVersion: 1,
+      ),
+    );
+    final progressController = GameProgressController(store: store);
+    await progressController.load();
+    final adGate = FakeNextLevelAdGate();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _gameScreen(
+          level: 6,
+          progressController: progressController,
+          nextLevelAdGate: adGate,
+        ),
+      ),
+    );
+
+    await _clearGeneratedStageByReverseSwaps(tester, stage: _generatedStage(6));
+    await tester.tap(find.byKey(const Key('clear_next_level_button')));
+    await tester.pumpAndSettle();
+
+    expect(adGate.calls, hasLength(1));
+    expect(adGate.calls.single.completedLevel, 6);
+    expect(adGate.calls.single.nextLevel, 7);
+    expect(store.writes.map((progress) => progress.currentLevel), [7]);
+    expect(progressController.currentLevel, 7);
+    expect(find.text('Level 7'), findsOneWidget);
+    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
+
+    progressController.dispose();
+  });
+
+  testWidgets('progress save failure does not ask the ad gate', (tester) async {
+    final store = FakeGameProgressStore(
+      progress: GameProgress(
+        schemaVersion: GameProgress.currentSchemaVersion,
+        currentLevel: 6,
+        highestUnlockedLevel: 6,
+        generatorVersion: 1,
+      ),
+      writeErrors: [StateError('forced save failure')],
+    );
+    final progressController = GameProgressController(store: store);
+    await progressController.load();
+    final adGate = FakeNextLevelAdGate();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _gameScreen(
+          level: 6,
+          progressController: progressController,
+          nextLevelAdGate: adGate,
+        ),
+      ),
+    );
+
+    await _clearGeneratedStageByReverseSwaps(tester, stage: _generatedStage(6));
+    await tester.tap(find.byKey(const Key('clear_next_level_button')));
+    await tester.pumpAndSettle();
+
+    expect(adGate.calls, isEmpty);
+    expect(progressController.currentLevel, 6);
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.byKey(const Key('clear_progress_save_error')), findsOneWidget);
+
+    progressController.dispose();
+  });
+
+  testWidgets('stage generation failure does not ask the ad gate', (
+    tester,
+  ) async {
+    final store = FakeGameProgressStore(
+      progress: GameProgress(
+        schemaVersion: GameProgress.currentSchemaVersion,
+        currentLevel: 6,
+        highestUnlockedLevel: 6,
+        generatorVersion: 1,
+      ),
+    );
+    final progressController = GameProgressController(store: store);
+    await progressController.load();
+    final adGate = FakeNextLevelAdGate();
+    final generator = _SpyStageGenerator(
+      errors: [null, _generationException()],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _gameScreen(
+          level: 6,
+          progressController: progressController,
+          stageGenerator: generator,
+          nextLevelAdGate: adGate,
+        ),
+      ),
+    );
+
+    await _clearGeneratedStageByReverseSwaps(tester, stage: _generatedStage(6));
+    await tester.tap(find.byKey(const Key('clear_next_level_button')));
+    await tester.pumpAndSettle();
+
+    expect(generator.levels, [6, 7]);
+    expect(store.writeCount, 0);
+    expect(adGate.calls, isEmpty);
+    expect(progressController.currentLevel, 6);
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.byKey(const Key('clear_next_level_error')), findsOneWidget);
+
+    progressController.dispose();
+  });
+
   testWidgets('home shows latest progress after returning from level 2', (
     tester,
   ) async {
@@ -4189,6 +4312,10 @@ BookLogicApp _app({
     feedbackSettingsStore:
         feedbackSettingsStore ??
         FakeAppFeedbackSettingsStore(settings: AppFeedbackSettings.defaults),
+    adRuntimeConfig: const AdRuntimeConfig(isTestMode: true, adsEnabled: false),
+    adConsentService: FakeAdConsentService(),
+    mobileAdsInitializer: FakeMobileAdsInitializer(),
+    interstitialAdGateway: FakeInterstitialAdGateway(),
     soundPlayer: soundPlayer,
     hapticPlayer: hapticPlayer,
   );
@@ -4215,6 +4342,8 @@ GameScreen _gameScreen({
   int generatorVersion = GeneratorConfig.currentVersion,
   StageGenerator stageGenerator = const StageGenerator(),
   GameProgressController? progressController,
+  NextLevelAdGate? nextLevelAdGate,
+  AdSessionCoordinator? adSessionCoordinator,
 }) {
   return GameScreen(
     level: level,
@@ -4226,6 +4355,8 @@ GameScreen _gameScreen({
           generatorVersion: generatorVersion,
         ),
     stageGenerator: stageGenerator,
+    nextLevelAdGate: nextLevelAdGate,
+    adSessionCoordinator: adSessionCoordinator,
   );
 }
 

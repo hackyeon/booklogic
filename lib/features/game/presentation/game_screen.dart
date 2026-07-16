@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../app/app_routes.dart';
+import '../../../core/ads/application/ad_session_coordinator.dart';
+import '../../../core/ads/interstitial/next_level_ad_gate.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/feedback/application/app_feedback_settings_controller.dart';
@@ -45,6 +47,8 @@ class GameScreen extends StatefulWidget {
     this.feedbackSettingsController,
     this.soundPlayer,
     this.hapticPlayer,
+    this.nextLevelAdGate,
+    this.adSessionCoordinator,
     this.enableTutorial = false,
     super.key,
   });
@@ -58,6 +62,8 @@ class GameScreen extends StatefulWidget {
   final AppFeedbackSettingsController? feedbackSettingsController;
   final GameSoundPlayer? soundPlayer;
   final GameHapticPlayer? hapticPlayer;
+  final NextLevelAdGate? nextLevelAdGate;
+  final AdSessionCoordinator? adSessionCoordinator;
   final bool enableTutorial;
 
   @override
@@ -108,6 +114,7 @@ class _GameScreenState extends State<GameScreen> {
     _learningProgressReady = !widget.enableTutorial;
     _currentLevel = widget.level;
     _generateStage(notify: false);
+    widget.adSessionCoordinator?.onGameScreenEntered(_currentLevel);
     unawaited(_initializeLearningProgress());
   }
 
@@ -120,6 +127,11 @@ class _GameScreenState extends State<GameScreen> {
         oldWidget.generatorVersionPolicy != widget.generatorVersionPolicy) {
       _currentLevel = widget.level;
       _generateStage(notify: false);
+      widget.adSessionCoordinator?.updateCurrentLevel(_currentLevel);
+    }
+    if (oldWidget.adSessionCoordinator != widget.adSessionCoordinator) {
+      oldWidget.adSessionCoordinator?.onGameScreenLeft();
+      widget.adSessionCoordinator?.onGameScreenEntered(_currentLevel);
     }
   }
 
@@ -128,6 +140,7 @@ class _GameScreenState extends State<GameScreen> {
     _controller?.removeListener(_handleGameControllerChanged);
     _controller?.dispose();
     _controller = null;
+    widget.adSessionCoordinator?.onGameScreenLeft();
     _tutorialController.dispose();
     unawaited(_feedbackCoordinator?.dispose());
     _learningProgressController?.removeListener(_handleLearningProgressChanged);
@@ -270,6 +283,10 @@ class _GameScreenState extends State<GameScreen> {
         level: nextLevel,
         generatorVersion: generatorVersion,
       );
+      await _showAdBeforeNextLevelIfReady(
+        completedLevel: currentController.level,
+        nextLevel: nextLevel,
+      );
       if (!mounted) {
         nextController.dispose();
         return;
@@ -291,6 +308,7 @@ class _GameScreenState extends State<GameScreen> {
         _configureStageGuides();
       });
 
+      widget.adSessionCoordinator?.updateCurrentLevel(nextStage.level);
       currentController.dispose();
     } on StageGenerationException {
       nextController?.dispose();
@@ -324,6 +342,24 @@ class _GameScreenState extends State<GameScreen> {
             : AppStrings.nextLevelPreparationError,
         isProgressSaveError: progressSaveStarted,
       );
+    }
+  }
+
+  Future<void> _showAdBeforeNextLevelIfReady({
+    required int completedLevel,
+    required int nextLevel,
+  }) async {
+    final gate = widget.nextLevelAdGate;
+    if (gate == null) {
+      return;
+    }
+    try {
+      await gate.showBeforeTransition(
+        completedLevel: completedLevel,
+        nextLevel: nextLevel,
+      );
+    } catch (_) {
+      // Ad failures must not block the already-saved level transition.
     }
   }
 

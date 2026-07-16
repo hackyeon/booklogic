@@ -34,7 +34,7 @@ class AppStrings {
   static const retryButton = '다시하기';
   static const generationRetryButton = '다시 시도';
   static const nextLevelButton = '다음 레벨';
-  static const preparingNextLevelButton = '다음 레벨 준비 중';
+  static const preparingNextLevelButton = '준비 중...';
   static const nextLevelPreparationError = '다음 레벨을 준비하지 못했습니다. 다시 시도해 주세요.';
   static const progressSaveError = '다음 레벨 진행도를 저장하지 못했습니다. 다시 시도해 주세요.';
   static const generationErrorTitle = '퍼즐을 불러오지 못했습니다';

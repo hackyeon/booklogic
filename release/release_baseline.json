@@ -1,0 +1,20 @@
+{
+  "baselineVersion": 1,
+  "appVersion": "1.0.0+1",
+  "androidApplicationId": "com.hack.booklogic.booklogic",
+  "iosBundleIdentifier": "com.hack.booklogic.booklogic",
+  "minimumSupportedLevel": 1,
+  "maximumSupportedLevel": 400,
+  "generatorVersions": {
+    "1": {
+      "minimumLevel": 1,
+      "maximumLevel": 200,
+      "manifestChecksum": 2127356086
+    },
+    "2": {
+      "minimumLevel": 201,
+      "maximumLevel": 400,
+      "manifestChecksum": 2719162944
+    }
+  }
+}

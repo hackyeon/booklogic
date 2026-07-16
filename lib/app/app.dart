@@ -2,6 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../core/ads/application/ad_bootstrap_controller.dart';
+import '../core/ads/application/ad_session_coordinator.dart';
+import '../core/ads/config/ad_runtime_config.dart';
+import '../core/ads/config/ad_unit_id_provider.dart';
+import '../core/ads/consent/ad_consent_controller.dart';
+import '../core/ads/consent/ad_consent_service.dart';
+import '../core/ads/consent/google_ump_consent_service.dart';
+import '../core/ads/interstitial/google_interstitial_ad_gateway.dart';
+import '../core/ads/interstitial/interstitial_ad_controller.dart';
+import '../core/ads/interstitial/interstitial_ad_gateway.dart';
+import '../core/ads/interstitial/interstitial_ad_policy.dart';
+import '../core/ads/interstitial/next_level_ad_gate.dart';
+import '../core/ads/sdk/google_mobile_ads_initializer.dart';
+import '../core/ads/sdk/mobile_ads_initializer.dart';
 import '../core/constants/app_strings.dart';
 import '../core/feedback/application/app_feedback_settings_controller.dart';
 import '../core/feedback/data/app_feedback_settings_store.dart';
@@ -31,6 +45,11 @@ class BookLogicApp extends StatefulWidget {
     GameProgressStore? progressStore,
     LearningProgressStore? learningProgressStore,
     AppFeedbackSettingsStore? feedbackSettingsStore,
+    AdRuntimeConfig? adRuntimeConfig,
+    this.adConsentService,
+    MobileAdsInitializer? mobileAdsInitializer,
+    InterstitialAdGateway? interstitialAdGateway,
+    this.adUnitIdProvider,
     GameSoundPlayer? soundPlayer,
     GameHapticPlayer? hapticPlayer,
     super.key,
@@ -45,12 +64,22 @@ class BookLogicApp extends StatefulWidget {
            SharedPreferencesAppFeedbackSettingsStore(
              keyValueStore: keyValueStore,
            ),
+       adRuntimeConfig = adRuntimeConfig ?? AdRuntimeConfig.fromEnvironment(),
+       mobileAdsInitializer =
+           mobileAdsInitializer ?? const GoogleMobileAdsInitializer(),
+       interstitialAdGateway =
+           interstitialAdGateway ?? const GoogleInterstitialAdGateway(),
        soundPlayer = soundPlayer ?? AssetGameSoundPlayer(),
        hapticPlayer = hapticPlayer ?? const FlutterGameHapticPlayer();
 
   final GameProgressStore progressStore;
   final LearningProgressStore learningProgressStore;
   final AppFeedbackSettingsStore feedbackSettingsStore;
+  final AdRuntimeConfig adRuntimeConfig;
+  final AdConsentService? adConsentService;
+  final MobileAdsInitializer mobileAdsInitializer;
+  final InterstitialAdGateway interstitialAdGateway;
+  final AdUnitIdProvider? adUnitIdProvider;
   final GameSoundPlayer soundPlayer;
   final GameHapticPlayer hapticPlayer;
 
@@ -63,6 +92,12 @@ class _BookLogicAppState extends State<BookLogicApp>
   late final GameProgressController _progressController;
   late final LearningProgressController _learningProgressController;
   late final AppFeedbackSettingsController _feedbackSettingsController;
+  late final AdConsentController _adConsentController;
+  late final InterstitialAdPolicy _interstitialAdPolicy;
+  late final InterstitialAdController _interstitialAdController;
+  late final AdSessionCoordinator _adSessionCoordinator;
+  late final AdBootstrapController _adBootstrapController;
+  late final NextLevelAdGate _nextLevelAdGate;
   late final PersistenceLifecycleCoordinator _persistenceLifecycleCoordinator;
   late final PersistenceHealthController _persistenceHealthController;
 
@@ -75,6 +110,35 @@ class _BookLogicAppState extends State<BookLogicApp>
     );
     _feedbackSettingsController = AppFeedbackSettingsController(
       store: widget.feedbackSettingsStore,
+    );
+    _adConsentController = AdConsentController(
+      service:
+          widget.adConsentService ??
+          GoogleUmpConsentService(config: widget.adRuntimeConfig),
+    );
+    _interstitialAdPolicy = const InterstitialAdPolicy();
+    _interstitialAdController = InterstitialAdController(
+      consentController: _adConsentController,
+      mobileAdsInitializer: widget.mobileAdsInitializer,
+      gateway: widget.interstitialAdGateway,
+      adUnitIdProvider:
+          widget.adUnitIdProvider ??
+          PlatformAdUnitIdProvider(config: widget.adRuntimeConfig),
+      policy: _interstitialAdPolicy,
+    );
+    _adSessionCoordinator = AdSessionCoordinator(
+      consentController: _adConsentController,
+      interstitialController: _interstitialAdController,
+      policy: _interstitialAdPolicy,
+    );
+    _adBootstrapController = AdBootstrapController(
+      consentController: _adConsentController,
+      interstitialController: _interstitialAdController,
+      adSessionCoordinator: _adSessionCoordinator,
+    );
+    _nextLevelAdGate = DefaultNextLevelAdGate(
+      policy: _interstitialAdPolicy,
+      interstitialController: _interstitialAdController,
     );
     _persistenceLifecycleCoordinator = PersistenceLifecycleCoordinator(
       stores: [
@@ -101,6 +165,10 @@ class _BookLogicAppState extends State<BookLogicApp>
     _progressController.dispose();
     _learningProgressController.dispose();
     _feedbackSettingsController.dispose();
+    _adBootstrapController.dispose();
+    _adSessionCoordinator.dispose();
+    _interstitialAdController.dispose();
+    _adConsentController.dispose();
     _persistenceLifecycleCoordinator.dispose();
     _persistenceHealthController.dispose();
     unawaited(widget.soundPlayer.stopAll());
@@ -126,6 +194,11 @@ class _BookLogicAppState extends State<BookLogicApp>
     );
     await _feedbackSettingsController.initialize();
     _persistenceHealthController.initialize();
+    unawaited(
+      _adBootstrapController.initialize(
+        currentLevel: _progressController.currentLevel,
+      ),
+    );
   }
 
   @override
@@ -148,10 +221,13 @@ class _BookLogicAppState extends State<BookLogicApp>
           feedbackSettingsController: _feedbackSettingsController,
           soundPlayer: widget.soundPlayer,
           hapticPlayer: widget.hapticPlayer,
+          nextLevelAdGate: _nextLevelAdGate,
+          adSessionCoordinator: _adSessionCoordinator,
           enableTutorial: true,
         ),
         AppRoutes.settings: (_) => SettingsScreen(
           feedbackSettingsController: _feedbackSettingsController,
+          adConsentController: _adConsentController,
           soundPlayer: widget.soundPlayer,
           hapticPlayer: widget.hapticPlayer,
         ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/ads/consent/ad_consent_controller.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/feedback/application/app_feedback_settings_controller.dart';
@@ -16,10 +17,12 @@ class SettingsScreen extends StatefulWidget {
     required this.feedbackSettingsController,
     required this.soundPlayer,
     required this.hapticPlayer,
+    this.adConsentController,
     super.key,
   });
 
   final AppFeedbackSettingsController feedbackSettingsController;
+  final AdConsentController? adConsentController;
   final GameSoundPlayer soundPlayer;
   final GameHapticPlayer hapticPlayer;
 
@@ -34,11 +37,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     widget.feedbackSettingsController.addListener(_handleSettingsChanged);
+    widget.adConsentController?.addListener(_handleAdConsentChanged);
+  }
+
+  @override
+  void didUpdateWidget(SettingsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.adConsentController != widget.adConsentController) {
+      oldWidget.adConsentController?.removeListener(_handleAdConsentChanged);
+      widget.adConsentController?.addListener(_handleAdConsentChanged);
+    }
   }
 
   @override
   void dispose() {
     widget.feedbackSettingsController.removeListener(_handleSettingsChanged);
+    widget.adConsentController?.removeListener(_handleAdConsentChanged);
     super.dispose();
   }
 
@@ -48,9 +62,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(title: const Text(AppStrings.settingsButton)),
       body: SafeArea(
         child: AnimatedBuilder(
-          animation: widget.feedbackSettingsController,
+          animation: Listenable.merge([
+            widget.feedbackSettingsController,
+            if (widget.adConsentController != null) widget.adConsentController!,
+          ]),
           builder: (context, _) {
             final controller = widget.feedbackSettingsController;
+            final adConsentController = widget.adConsentController;
             return ListView(
               padding: const EdgeInsets.all(AppDimensions.screenPadding),
               children: [
@@ -92,6 +110,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       trailing: const Icon(Icons.chevron_right_rounded),
                       onTap: () => _showPrivacySnackBar(context),
                     ),
+                    if (adConsentController?.privacyOptionsRequired ==
+                        true) ...[
+                      const Divider(height: 1),
+                      ListTile(
+                        key: const Key('settings_ad_privacy_options'),
+                        title: const Text('광고 개인정보 설정'),
+                        subtitle: const Text('광고와 관련된 개인정보 선택을 변경합니다.'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: _showAdPrivacyOptions,
+                      ),
+                    ],
                     ListTile(
                       title: const Text(AppStrings.openSourceLicenses),
                       trailing: const Icon(Icons.chevron_right_rounded),
@@ -153,6 +182,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       widget.feedbackSettingsController.clearError();
     });
+  }
+
+  void _handleAdConsentChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _showAdPrivacyOptions() async {
+    try {
+      await widget.adConsentController?.showPrivacyOptions();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('광고 개인정보 설정을 열지 못했습니다. 잠시 후 다시 시도해 주세요.'),
+          ),
+        );
+    }
   }
 
   void _showPrivacySnackBar(BuildContext context) {
