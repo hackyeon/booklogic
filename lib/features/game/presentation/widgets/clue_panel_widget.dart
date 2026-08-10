@@ -61,19 +61,84 @@ class CluePanelWidget extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.mediumSpacing),
-          if (clues.isEmpty)
-            Text(AppStrings.emptyClueList, style: textTheme.bodyLarge)
-          else
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final indexedClue in clues.indexed) ...[
-                  if (indexedClue.$1 > 0)
-                    const SizedBox(height: AppDimensions.smallSpacing),
-                  _buildClueCard(indexedClue.$1, indexedClue.$2),
-                ],
-              ],
-            ),
+          ClueCardListWidget(
+            clues: clues,
+            books: books,
+            satisfiedClueIds: satisfiedClueIds,
+            highlightedClueId: highlightedClueId,
+            tutorialTargetRegistry: tutorialTargetRegistry,
+            onClueTap: onClueTap,
+            formatter: formatter,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ClueCardListWidget extends StatelessWidget {
+  const ClueCardListWidget({
+    required this.clues,
+    required this.books,
+    required this.satisfiedClueIds,
+    this.highlightedClueId,
+    this.onClueTap,
+    this.tutorialTargetRegistry,
+    this.formatter = const ClueTextFormatter(),
+    this.scrollable = false,
+    this.padding = EdgeInsets.zero,
+    this.listKey,
+    super.key,
+  });
+
+  final List<Clue> clues;
+  final List<Book> books;
+  final Set<String> satisfiedClueIds;
+  final String? highlightedClueId;
+  final ValueChanged<String>? onClueTap;
+  final TutorialTargetRegistry? tutorialTargetRegistry;
+  final ClueTextFormatter formatter;
+  final bool scrollable;
+  final EdgeInsetsGeometry padding;
+  final Key? listKey;
+
+  @override
+  Widget build(BuildContext context) {
+    if (clues.isEmpty) {
+      return Padding(
+        padding: padding,
+        child: Text(
+          AppStrings.emptyClueList,
+          style: Theme.of(context).textTheme.bodyLarge,
+        ),
+      );
+    }
+
+    if (scrollable) {
+      return ListView.separated(
+        key: listKey,
+        padding: padding,
+        shrinkWrap: true,
+        itemCount: clues.length,
+        separatorBuilder: (context, index) {
+          return const SizedBox(height: AppDimensions.smallSpacing);
+        },
+        itemBuilder: (context, index) {
+          return _buildClueCard(index, clues[index]);
+        },
+      );
+    }
+
+    return Padding(
+      padding: padding,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final indexedClue in clues.indexed) ...[
+            if (indexedClue.$1 > 0)
+              const SizedBox(height: AppDimensions.smallSpacing),
+            _buildClueCard(indexedClue.$1, indexedClue.$2),
+          ],
         ],
       ),
     );

@@ -94,10 +94,16 @@ class TutorialPlanFactory {
     return TutorialPlan(
       level: stage.level,
       steps: [
+        const TutorialStep(
+          id: 'level_3_open_clue_sheet',
+          type: TutorialStepType.tapClueSummary,
+          message: '단서를 눌러 단서 목록을 확인해 보세요.',
+          target: TutorialTarget.cluePanelToggle(),
+        ),
         TutorialStep(
           id: 'level_3_tap_clue',
           type: TutorialStepType.tapClueCard,
-          message: '단서를 눌러 관련 책을 확인해 보세요.',
+          message: '단서 카드를 눌러 관련 책을 확인해 보세요.',
           target: TutorialTarget.clueCard(clue.id),
           expectedClueId: clue.id,
         ),
@@ -132,12 +138,24 @@ class TutorialPlanFactory {
     return TutorialPlan(
       level: stage.level,
       steps: [
+        const TutorialStep(
+          id: 'level_4_open_first_clue_sheet',
+          type: TutorialStepType.tapClueSummary,
+          message: '단서를 눌러 첫 번째 단서를 확인해 보세요.',
+          target: TutorialTarget.cluePanelToggle(),
+        ),
         TutorialStep(
           id: 'level_4_tap_first_clue',
           type: TutorialStepType.tapClueCard,
           message: '첫 번째 단서를 확인해 보세요.',
           target: TutorialTarget.clueCard(clues.first.id),
           expectedClueId: clues.first.id,
+        ),
+        const TutorialStep(
+          id: 'level_4_open_second_clue_sheet',
+          type: TutorialStepType.tapClueSummary,
+          message: '단서를 다시 열어 두 번째 단서를 확인해 보세요.',
+          target: TutorialTarget.cluePanelToggle(),
         ),
         TutorialStep(
           id: 'level_4_tap_second_clue',

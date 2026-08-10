@@ -13,6 +13,9 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
     required this.totalStepCount,
     required this.onAcknowledge,
     required this.onSkipConfirmed,
+    this.onTargetTap,
+    this.blockBackgroundInteraction = true,
+    this.ignorePointers = false,
     super.key,
   });
 
@@ -22,6 +25,9 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
   final int totalStepCount;
   final VoidCallback onAcknowledge;
   final VoidCallback onSkipConfirmed;
+  final VoidCallback? onTargetTap;
+  final bool blockBackgroundInteraction;
+  final bool ignorePointers;
 
   @override
   State<TutorialCoachMarkOverlay> createState() =>
@@ -55,38 +61,55 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     final targetRect = _paddedTargetRect(context);
     final color = Colors.black.withValues(alpha: 0.48);
 
-    return Positioned.fill(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, constraints.maxHeight);
-          final cardRect = _messageCardRect(
-            screenSize: size,
-            targetRect: targetRect,
-          );
+    final overlay = LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final cardRect = _messageCardRect(
+          screenSize: size,
+          targetRect: targetRect,
+        );
 
-          return Stack(
-            children: [
-              if (targetRect == null)
-                Positioned.fill(child: _Barrier(color: color))
-              else
-                ..._barriers(targetRect, size, color),
-              if (targetRect != null)
-                Positioned.fromRect(
-                  rect: targetRect,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 3,
-                        ),
+        return Stack(
+          children: [
+            if (targetRect == null)
+              Positioned.fill(
+                child: _Barrier(
+                  color: color,
+                  absorbsPointer: widget.blockBackgroundInteraction,
+                ),
+              )
+            else
+              ..._barriers(targetRect, size, color),
+            if (targetRect != null)
+              Positioned.fromRect(
+                rect: targetRect,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
                       ),
                     ),
                   ),
                 ),
+              ),
+            if (targetRect != null && widget.onTargetTap != null)
               Positioned.fromRect(
-                rect: cardRect,
+                rect: targetRect,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onTargetTap,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            Positioned.fromRect(
+              rect: cardRect,
+              child: IgnorePointer(
+                ignoring:
+                    widget.onTargetTap != null &&
+                    !widget.step.requiresAcknowledgement,
                 child: TutorialMessageCard(
                   message: widget.step.message,
                   secondaryMessage: widget.step.secondaryMessage,
@@ -100,10 +123,13 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
                   onSkip: _confirmSkip,
                 ),
               ),
-            ],
-          );
-        },
-      ),
+            ),
+          ],
+        );
+      },
+    );
+    return Positioned.fill(
+      child: widget.ignorePointers ? IgnorePointer(child: overlay) : overlay,
     );
   }
 
@@ -114,28 +140,40 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
         top: 0,
         width: screenSize.width,
         height: targetRect.top,
-        child: _Barrier(color: color),
+        child: _Barrier(
+          color: color,
+          absorbsPointer: widget.blockBackgroundInteraction,
+        ),
       ),
       Positioned(
         left: 0,
         top: targetRect.top,
         width: targetRect.left,
         height: targetRect.height,
-        child: _Barrier(color: color),
+        child: _Barrier(
+          color: color,
+          absorbsPointer: widget.blockBackgroundInteraction,
+        ),
       ),
       Positioned(
         left: targetRect.right,
         top: targetRect.top,
         width: screenSize.width - targetRect.right,
         height: targetRect.height,
-        child: _Barrier(color: color),
+        child: _Barrier(
+          color: color,
+          absorbsPointer: widget.blockBackgroundInteraction,
+        ),
       ),
       Positioned(
         left: 0,
         top: targetRect.bottom,
         width: screenSize.width,
         height: screenSize.height - targetRect.bottom,
-        child: _Barrier(color: color),
+        child: _Barrier(
+          color: color,
+          absorbsPointer: widget.blockBackgroundInteraction,
+        ),
       ),
     ];
   }
@@ -261,16 +299,21 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
 }
 
 class _Barrier extends StatelessWidget {
-  const _Barrier({required this.color});
+  const _Barrier({required this.color, required this.absorbsPointer});
 
   final Color color;
+  final bool absorbsPointer;
 
   @override
   Widget build(BuildContext context) {
+    final barrier = ColoredBox(color: color);
+    if (!absorbsPointer) {
+      return IgnorePointer(child: barrier);
+    }
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {},
-      child: ColoredBox(color: color),
+      child: barrier,
     );
   }
 }

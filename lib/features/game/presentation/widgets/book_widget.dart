@@ -63,6 +63,17 @@ class BookWidget extends StatelessWidget {
         ? 2.0
         : 1.0;
     final slideOffset = Offset(0, -lift / height);
+    final horizontalPadding = width < 52 ? 4.0 : AppDimensions.smallSpacing;
+    final verticalPadding = height < 68 ? 4.0 : AppDimensions.mediumSpacing;
+    final decorationLineHeight = height < 56 ? 2.0 : 3.0;
+    final availableIconHeight =
+        height - verticalPadding * 2 - decorationLineHeight * 2 - 4;
+    final preferredIconSize = width * 0.46;
+    final iconSize = availableIconHeight <= 0
+        ? 0.0
+        : preferredIconSize > availableIconHeight
+        ? availableIconHeight
+        : preferredIconSize;
 
     return Semantics(
       label: labelFormatter.formatBook(book),
@@ -112,22 +123,26 @@ class BookWidget extends StatelessWidget {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppDimensions.smallSpacing,
-                  vertical: AppDimensions.mediumSpacing,
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
                 ),
                 child: Column(
                   children: [
-                    _BookDecorationLine(color: visual.foregroundColor),
+                    _BookDecorationLine(
+                      color: visual.foregroundColor,
+                      height: decorationLineHeight,
+                    ),
                     const Spacer(),
                     Icon(
                       book.symbol.icon,
                       color: visual.foregroundColor,
-                      size: width * 0.46,
+                      size: iconSize,
                     ),
                     const Spacer(),
                     _BookDecorationLine(
                       color: visual.foregroundColor,
+                      height: decorationLineHeight,
                       widthFactor: 0.58,
                     ),
                   ],
@@ -142,9 +157,14 @@ class BookWidget extends StatelessWidget {
 }
 
 class _BookDecorationLine extends StatelessWidget {
-  const _BookDecorationLine({required this.color, this.widthFactor = 1});
+  const _BookDecorationLine({
+    required this.color,
+    required this.height,
+    this.widthFactor = 1,
+  });
 
   final Color color;
+  final double height;
   final double widthFactor;
 
   @override
@@ -152,7 +172,7 @@ class _BookDecorationLine extends StatelessWidget {
     return FractionallySizedBox(
       widthFactor: widthFactor,
       child: Container(
-        height: 3,
+        height: height,
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.62),
           borderRadius: BorderRadius.circular(2),

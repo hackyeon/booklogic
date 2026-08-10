@@ -1025,10 +1025,14 @@ void main() {
   testWidgets('shows generated level 1 clue panel and cards', (tester) async {
     await tester.pumpWidget(MaterialApp(home: _gameScreen()));
 
-    expect(find.byKey(const Key('clue_panel')), findsOneWidget);
+    expect(find.byKey(const Key('clue_panel')), findsNothing);
+    expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
+    await _openClueSheet(tester);
+    expect(find.byKey(const Key('clue_bottom_sheet')), findsOneWidget);
     _expectGeneratedCluesVisible(1);
     expect(find.text(_initialClueTitle(1)), findsOneWidget);
     _expectInitialGeneratedLevel1Checks();
+    await _closeClueSheet(tester);
   });
 
   testWidgets('clue card shows neutral and satisfied states', (tester) async {
@@ -1503,7 +1507,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: _gameScreen()));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('clue_panel')), findsOneWidget);
+    expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
+    expect(find.byKey(const Key('clue_bottom_sheet')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -3361,9 +3366,9 @@ void main() {
     await tester.tap(find.byKey(Key('book_$selectedBookId')));
     await tester.pumpAndSettle();
 
+    final orderBeforeClueTap = _visibleBookOrder(tester);
+    await _openClueSheet(tester);
     final clueFinder = find.byKey(Key('clue_${_generatedLevel1ClueIds.first}'));
-    await tester.ensureVisible(clueFinder);
-    await tester.pumpAndSettle();
     await tester.tap(clueFinder);
     await tester.pumpAndSettle();
 
@@ -3375,7 +3380,7 @@ void main() {
     );
     expect(find.text('${AppStrings.moveCountPrefix} 0회'), findsOneWidget);
     expect(find.text(_initialClueTitle(1)), findsOneWidget);
-    expect(_visibleBookOrder(tester), _generatedLevel1BookIds);
+    expect(_visibleBookOrder(tester), orderBeforeClueTap);
   });
 
   testWidgets('tapping empty game content clears selection', (tester) async {
@@ -3986,8 +3991,8 @@ void main() {
     );
     _expectBookCentersStrictlyIncreasing(tester, _generatedLevel6BookIds);
     _expectBooksDoNotOverlap(tester, _generatedLevel6BookIds);
-    expect(find.byKey(const Key('clue_panel')), findsOneWidget);
-    expect(find.byType(ClueCardWidget), findsNWidgets(3));
+    expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
+    expect(find.byType(ClueCardWidget), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -4003,14 +4008,14 @@ void main() {
       await tester.pumpAndSettle();
 
       _expectBooksDoNotOverlap(tester, _generatedLevel1BookIds);
-      expect(find.byKey(const Key('clue_panel')), findsOneWidget);
+      expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(MaterialApp(home: _gameScreen(level: 6)));
       await tester.pumpAndSettle();
 
       _expectBooksDoNotOverlap(tester, _generatedLevel6BookIds);
-      expect(find.byKey(const Key('clue_panel')), findsOneWidget);
+      expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(MaterialApp(home: _gameScreen(level: 51)));
@@ -4107,7 +4112,8 @@ void main() {
       _generatedLevel51BookIds,
     );
     expect(find.text(_initialClueTitle(51)), findsOneWidget);
-    expect(find.byType(ClueCardWidget), findsNWidgets(4));
+    expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
+    expect(find.byType(ClueCardWidget), findsNothing);
     _expectGridBooksDoNotOverlap(tester, _generatedLevel51BookIds);
     expect(tester.takeException(), isNull);
   });
@@ -4401,6 +4407,16 @@ Future<void> _finishClear(WidgetTester tester, [int? bookCount]) async {
   await tester.pump();
 }
 
+Future<void> _openClueSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('clue_summary_button')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _closeClueSheet(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('clue_bottom_sheet_close_button')));
+  await tester.pumpAndSettle();
+}
+
 Future<void> _clearGeneratedLevel1Game(WidgetTester tester) async {
   await _clearGeneratedStageByReverseSwaps(tester, stage: _generatedStage(1));
 }
@@ -4514,6 +4530,10 @@ void _expectGeneratedCluesVisible(int level) {
   final books = [
     for (final placement in stage.targetPlacements) placement.book,
   ];
+  expect(find.byKey(const Key('clue_summary_button')), findsOneWidget);
+  if (find.byKey(const Key('clue_bottom_sheet')).evaluate().isEmpty) {
+    return;
+  }
   for (final clue in stage.clues) {
     expect(find.byKey(Key('clue_${clue.id}')), findsOneWidget);
     expect(
@@ -4539,6 +4559,16 @@ void _expectInitialGeneratedLevel1Checks() {
 }
 
 void _expectOnlyGeneratedChecks(List<String> satisfiedIds) {
+  expect(
+    find.text(
+      '${AppStrings.clueTitle} '
+      '${satisfiedIds.length}/${_generatedStage(1).clueCount}',
+    ),
+    findsWidgets,
+  );
+  if (find.byKey(const Key('clue_bottom_sheet')).evaluate().isEmpty) {
+    return;
+  }
   for (final clueId in _generatedLevel1ClueIds) {
     final matcher = satisfiedIds.contains(clueId)
         ? findsOneWidget

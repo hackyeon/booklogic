@@ -106,10 +106,25 @@ class GameTutorialController extends ChangeNotifier {
       TutorialStepType.tapBook => bookId == step.expectedBookId,
       TutorialStepType.tapSecondBook =>
         bookId == step.expectedBookId || bookId == _previousExpectedBookId(),
+      TutorialStepType.tapClueSummary => false,
       TutorialStepType.tapClueCard ||
       TutorialStepType.acknowledgeMessage ||
       TutorialStepType.freePlayIntroduction => !step.blocksGameInput,
     };
+  }
+
+  bool canOpenClueSheet(GameController gameController) {
+    if (!isActive) {
+      return gameController.status == GameStatus.idle;
+    }
+    if (gameController.status != GameStatus.idle ||
+        _isWaitingForAnimation ||
+        _isWaitingForClueHighlight) {
+      return false;
+    }
+    final step = currentStep;
+    return step?.type == TutorialStepType.tapClueSummary ||
+        step?.type == TutorialStepType.tapClueCard;
   }
 
   bool canTapClue(String clueId, GameController gameController) {
@@ -174,6 +189,37 @@ class GameTutorialController extends ChangeNotifier {
     }
     _isWaitingForClueHighlight = true;
     _notifySafely();
+  }
+
+  void onClueSummaryOpened(GameController gameController) {
+    final step = currentStep;
+    if (step == null ||
+        step.type != TutorialStepType.tapClueSummary ||
+        gameController.status != GameStatus.idle) {
+      return;
+    }
+    _advanceOrComplete();
+  }
+
+  void onClueSheetDismissed() {
+    if (!isActive || _isWaitingForClueHighlight) {
+      return;
+    }
+    final step = currentStep;
+    if (step == null || step.type != TutorialStepType.tapClueCard) {
+      return;
+    }
+    final plan = _plan;
+    if (plan == null) {
+      return;
+    }
+    for (var index = _currentStepIndex - 1; index >= 0; index -= 1) {
+      if (plan.steps[index].type == TutorialStepType.tapClueSummary) {
+        _currentStepIndex = index;
+        _notifySafely();
+        return;
+      }
+    }
   }
 
   void onGameControllerChanged(GameController gameController) {

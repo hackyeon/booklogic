@@ -6,6 +6,7 @@ import '../../../app/app_routes.dart';
 import '../../../core/ads/application/ad_session_coordinator.dart';
 import '../../../core/ads/interstitial/next_level_ad_gate.dart';
 import '../../../core/constants/app_dimensions.dart';
+import '../../../core/constants/app_durations.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/feedback/application/app_feedback_settings_controller.dart';
 import '../../../core/feedback/application/game_feedback_coordinator.dart';
@@ -26,15 +27,21 @@ import '../tutorial/application/game_tutorial_controller.dart';
 import '../tutorial/application/learning_progress_controller.dart';
 import '../tutorial/data/shared_preferences_learning_progress_store.dart';
 import '../tutorial/domain/rule_introduction.dart';
+import '../tutorial/domain/tutorial_step.dart';
+import '../tutorial/domain/tutorial_step_type.dart';
+import '../tutorial/domain/tutorial_target.dart';
 import '../tutorial/presentation/rule_introduction_overlay.dart';
 import '../tutorial/presentation/tutorial_coach_mark_overlay.dart';
 import '../tutorial/presentation/tutorial_target_registry.dart';
+import '../tutorial/presentation/tutorial_target_widget.dart';
 import 'formatters/book_label_formatter.dart';
 import 'formatters/clue_text_formatter.dart';
 import 'widgets/bookshelf_widget.dart';
-import 'widgets/clue_panel_widget.dart';
+import 'widgets/clue_bottom_sheet.dart';
+import 'widgets/clue_summary_button.dart';
 import 'widgets/clear_result_overlay.dart';
 import 'widgets/game_generation_error_view.dart';
+import 'widgets/game_status_bar.dart';
 
 class GameScreen extends StatefulWidget {
   const GameScreen({
@@ -87,6 +94,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _learningProgressReady = false;
   List<RuleIntroduction> _ruleIntroductionQueue = const [];
   int _ruleIntroductionIndex = 0;
+  bool _isClueBottomSheetOpen = false;
 
   @override
   void initState() {
@@ -417,7 +425,8 @@ class _GameScreenState extends State<GameScreen> {
             key: const Key('game_restart_button'),
             tooltip: '재시작',
             iconSize: AppDimensions.iconSize,
-            onPressed: controller.status == GameStatus.idle
+            onPressed:
+                controller.status == GameStatus.idle && !_blocksChromeInput
                 ? _restartCurrentLevel
                 : null,
             icon: const Icon(Icons.restart_alt_rounded),
@@ -425,7 +434,7 @@ class _GameScreenState extends State<GameScreen> {
           IconButton(
             tooltip: AppStrings.settingsButton,
             iconSize: AppDimensions.iconSize,
-            onPressed: controller.isInputLocked
+            onPressed: controller.isInputLocked || _blocksChromeInput
                 ? null
                 : () => Navigator.of(context).pushNamed(AppRoutes.settings),
             icon: const Icon(Icons.settings_rounded),
@@ -439,71 +448,48 @@ class _GameScreenState extends State<GameScreen> {
               key: const Key('game_content_background'),
               behavior: HitTestBehavior.opaque,
               onTap: controller.cancelSelection,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(
-                          AppDimensions.screenPadding,
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.screenPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const _GameInstruction(),
+                    const SizedBox(height: AppDimensions.mediumSpacing),
+                    Expanded(
+                      child: KeyedSubtree(
+                        key: ValueKey(
+                          'game_stage_${controller.level}_'
+                          '$_stageSessionRevision'
+                          '_bookshelf_revision_${controller.boardRevision}',
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: AppDimensions.mediumSpacing),
-                            const _GameInstruction(),
-                            const SizedBox(
-                              height: AppDimensions.sectionSpacing,
-                            ),
-                            KeyedSubtree(
-                              key: ValueKey(
-                                'game_stage_${controller.level}_'
-                                '$_stageSessionRevision'
-                                '_bookshelf_revision_${controller.boardRevision}',
-                              ),
-                              child: BookshelfWidget(
-                                placements: controller.placements,
-                                tierCount: controller.tierCount,
-                                booksPerTier: controller.booksPerTier,
-                                selectedBookId: controller.selectedBookId,
-                                isAnimating: controller.isAnimating,
-                                activeSwap: controller.activeSwap,
-                                isInteractionLocked: controller.isInputLocked,
-                                isClearing: controller.isClearing,
-                                isCleared: controller.isCleared,
-                                clearActiveBookId: controller.clearActiveBookId,
-                                isShelfGlowing: controller.isShelfGlowing,
-                                clueHighlightedBookIds:
-                                    controller.clueHighlightedBookIds,
-                                tutorialTargetRegistry: _tutorialTargetRegistry,
-                                onBookTap: _handleBookTap,
-                                onEmptyTap: _handleEmptyTap,
-                              ),
-                            ),
-                            const SizedBox(height: AppDimensions.mediumSpacing),
-                            _GameStatusBar(controller: controller),
-                            const SizedBox(height: AppDimensions.smallSpacing),
-                            const _InteractionPlaceholder(),
-                            const SizedBox(
-                              height: AppDimensions.sectionSpacing,
-                            ),
-                            CluePanelWidget(
-                              clues: controller.clues,
-                              books: _stageBooks(controller.placements),
-                              satisfiedClueIds: controller.satisfiedClueIds,
-                              highlightedClueId: controller.highlightedClueId,
-                              tutorialTargetRegistry: _tutorialTargetRegistry,
-                              onClueTap: _handleClueTap,
-                            ),
-                          ],
+                        child: BookshelfWidget(
+                          placements: controller.placements,
+                          tierCount: controller.tierCount,
+                          booksPerTier: controller.booksPerTier,
+                          selectedBookId: controller.selectedBookId,
+                          isAnimating: controller.isAnimating,
+                          activeSwap: controller.activeSwap,
+                          isInteractionLocked: controller.isInputLocked,
+                          isClearing: controller.isClearing,
+                          isCleared: controller.isCleared,
+                          clearActiveBookId: controller.clearActiveBookId,
+                          isShelfGlowing: controller.isShelfGlowing,
+                          clueHighlightedBookIds:
+                              controller.clueHighlightedBookIds,
+                          tutorialTargetRegistry: _tutorialTargetRegistry,
+                          onBookTap: _handleBookTap,
+                          onEmptyTap: _handleEmptyTap,
                         ),
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: AppDimensions.mediumSpacing),
+                    GameStatusBar(
+                      moveCount: controller.moveCount,
+                      selectionText: _selectionTextFor(controller),
+                      clueSummaryButton: _buildClueSummaryButton(controller),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -523,7 +509,7 @@ class _GameScreenState extends State<GameScreen> {
               introduction: _currentRuleIntroduction!,
               onAcknowledge: _acknowledgeCurrentRuleIntroduction,
             ),
-          if (!controller.isCleared && _tutorialController.isActive)
+          if (_shouldShowMainTutorialOverlay(controller))
             TutorialCoachMarkOverlay(
               registry: _tutorialTargetRegistry,
               step: _tutorialController.currentStep!,
@@ -531,6 +517,14 @@ class _GameScreenState extends State<GameScreen> {
               totalStepCount: _tutorialController.plan!.steps.length,
               onAcknowledge: _tutorialController.acknowledgeCurrentStep,
               onSkipConfirmed: _skipTutorial,
+              onTargetTap:
+                  _tutorialController.currentStep?.type ==
+                      TutorialStepType.tapClueSummary
+                  ? () => unawaited(_openClueBottomSheet())
+                  : null,
+              blockBackgroundInteraction:
+                  _tutorialController.currentStep?.type !=
+                  TutorialStepType.tapClueSummary,
             ),
         ],
       ),
@@ -544,6 +538,12 @@ class _GameScreenState extends State<GameScreen> {
       return null;
     }
     return _ruleIntroductionQueue[_ruleIntroductionIndex];
+  }
+
+  bool get _blocksChromeInput {
+    return _tutorialController.blocksGameInput ||
+        _currentRuleIntroduction != null ||
+        _isClueBottomSheetOpen;
   }
 
   Future<void> _initializeLearningProgress() async {
@@ -626,6 +626,131 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     return List<RuleIntroduction>.unmodifiable(introductions);
+  }
+
+  Widget _buildClueSummaryButton(GameController controller) {
+    final summaryButton = ClueSummaryButton(
+      satisfiedCount: controller.satisfiedClueCount,
+      totalCount: controller.clues.length,
+      enabled: _canOpenClueBottomSheet(controller),
+      onPressed: () => unawaited(_openClueBottomSheet()),
+    );
+
+    if (!widget.enableTutorial) {
+      return summaryButton;
+    }
+    return TutorialTargetWidget(
+      registry: _tutorialTargetRegistry,
+      targetId: const TutorialTarget.cluePanelToggle().targetId!,
+      child: summaryButton,
+    );
+  }
+
+  bool _canOpenClueBottomSheet(GameController controller) {
+    if (_isClueBottomSheetOpen ||
+        _currentRuleIntroduction != null ||
+        controller.status != GameStatus.idle ||
+        controller.isCleared) {
+      return false;
+    }
+    return _tutorialController.canOpenClueSheet(controller);
+  }
+
+  Future<void> _openClueBottomSheet() async {
+    final controller = _controller;
+    if (controller == null || !_canOpenClueBottomSheet(controller)) {
+      return;
+    }
+
+    _tutorialController.onClueSummaryOpened(controller);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isClueBottomSheetOpen = true;
+    });
+
+    final selectedClueId = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      barrierColor: Colors.black.withValues(alpha: 0.46),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        return AnimatedBuilder(
+          animation: Listenable.merge([controller, _tutorialController]),
+          builder: (context, _) {
+            return ClueBottomSheet(
+              clues: controller.clues,
+              books: _stageBooks(controller.placements),
+              satisfiedClueIds: controller.satisfiedClueIds,
+              highlightedClueId: controller.highlightedClueId,
+              tutorialTargetRegistry: _tutorialTargetRegistry,
+              tutorialStep: _bottomSheetTutorialStep,
+              tutorialStepIndex: _tutorialController.currentStepIndex,
+              tutorialStepCount: _tutorialController.plan?.steps.length ?? 0,
+              onTutorialAcknowledge: _tutorialController.acknowledgeCurrentStep,
+              onTutorialSkipConfirmed: _skipTutorial,
+              canSelectClue: (clueId) {
+                return _tutorialController.canTapClue(clueId, controller);
+              },
+            );
+          },
+        );
+      },
+    );
+
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isClueBottomSheetOpen = false;
+    });
+
+    final activeController = _controller;
+    if (activeController == null) {
+      return;
+    }
+    if (selectedClueId == null) {
+      _tutorialController.onClueSheetDismissed();
+      return;
+    }
+    await Future<void>.delayed(AppDurations.resultOverlay);
+    if (!mounted) {
+      return;
+    }
+    _handleClueTap(selectedClueId);
+  }
+
+  TutorialStep? get _bottomSheetTutorialStep {
+    if (_tutorialController.isWaitingForClueHighlight) {
+      return null;
+    }
+    final step = _tutorialController.currentStep;
+    if (step == null || step.target.type != TutorialTargetType.clueCard) {
+      return null;
+    }
+    return step;
+  }
+
+  bool _shouldShowMainTutorialOverlay(GameController controller) {
+    if (controller.isCleared ||
+        !_tutorialController.isActive ||
+        _tutorialController.isWaitingForClueHighlight) {
+      return false;
+    }
+    final step = _tutorialController.currentStep;
+    if (step == null) {
+      return false;
+    }
+    if (_isClueBottomSheetOpen &&
+        step.target.type == TutorialTargetType.clueCard) {
+      return false;
+    }
+    return true;
   }
 
   void _handleBookTap(String bookId) {
@@ -763,31 +888,10 @@ class _GameScreenState extends State<GameScreen> {
     }
     return books;
   }
-}
 
-class _GameInstruction extends StatelessWidget {
-  const _GameInstruction();
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      AppStrings.gameInstruction,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.titleLarge,
-    );
-  }
-}
-
-class _GameStatusBar extends StatelessWidget {
-  const _GameStatusBar({required this.controller});
-
-  final GameController controller;
-  static const _bookLabelFormatter = BookLabelFormatter();
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedBookName = _selectedBookName();
-    final selectionText = switch (controller.status) {
+  String _selectionTextFor(GameController controller) {
+    final selectedBookName = _selectedBookName(controller);
+    return switch (controller.status) {
       GameStatus.animating => AppStrings.swappingBooks,
       GameStatus.clearing => AppStrings.clearingBooks,
       GameStatus.cleared => AppStrings.clearedBooks,
@@ -796,72 +900,34 @@ class _GameStatusBar extends StatelessWidget {
             ? AppStrings.selectFirstBook
             : '${AppStrings.selectedBookPrefix} $selectedBookName · ${AppStrings.selectSecondBook}',
     };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.mediumSpacing,
-        vertical: AppDimensions.smallSpacing,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
-              const SizedBox(width: AppDimensions.smallSpacing),
-              Text('${AppStrings.moveCountPrefix} ${controller.moveCount}회'),
-              const Spacer(),
-              const Icon(Icons.fact_check_outlined, color: AppColors.primary),
-              const SizedBox(width: AppDimensions.smallSpacing),
-              Text(
-                '${AppStrings.clueTitle} '
-                '${controller.satisfiedClueCount}/${controller.clues.length}',
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.smallSpacing),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              selectionText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
-  String? _selectedBookName() {
+  String? _selectedBookName(GameController controller) {
     final selectedBookId = controller.selectedBookId;
     if (selectedBookId == null) {
       return null;
     }
 
+    const formatter = BookLabelFormatter();
     for (final placement in controller.placements) {
       if (placement.book.id == selectedBookId) {
-        return _bookLabelFormatter.formatBook(placement.book);
+        return formatter.formatBook(placement.book);
       }
     }
     return null;
   }
 }
 
-class _InteractionPlaceholder extends StatelessWidget {
-  const _InteractionPlaceholder();
+class _GameInstruction extends StatelessWidget {
+  const _GameInstruction();
 
   @override
   Widget build(BuildContext context) {
     return Text(
       AppStrings.gameSelectionInstruction,
       textAlign: TextAlign.center,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
       style: Theme.of(context).textTheme.bodyLarge,
     );
   }

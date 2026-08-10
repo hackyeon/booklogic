@@ -75,9 +75,15 @@ void main() {
           TutorialStepType.tapSecondBook,
           TutorialStepType.acknowledgeMessage,
         ],
-        3: [TutorialStepType.tapClueCard, TutorialStepType.acknowledgeMessage],
-        4: [
+        3: [
+          TutorialStepType.tapClueSummary,
           TutorialStepType.tapClueCard,
+          TutorialStepType.acknowledgeMessage,
+        ],
+        4: [
+          TutorialStepType.tapClueSummary,
+          TutorialStepType.tapClueCard,
+          TutorialStepType.tapClueSummary,
           TutorialStepType.tapClueCard,
           TutorialStepType.acknowledgeMessage,
         ],
