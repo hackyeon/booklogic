@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:booklogic/core/theme/app_colors.dart';
@@ -15,5 +16,19 @@ void main() {
     expect(theme.colorScheme.tertiary, AppColors.tertiary);
     expect(theme.colorScheme.onSurface, AppColors.textPrimary);
     expect(theme.colorScheme.onSurfaceVariant, AppColors.textSecondary);
+  });
+
+  test('light theme keeps Android system UI on the warm background', () {
+    final theme = AppTheme.light();
+    const style = AppTheme.systemUiOverlayStyle;
+
+    expect(style.statusBarColor, Colors.transparent);
+    expect(style.statusBarIconBrightness, Brightness.dark);
+    expect(style.systemNavigationBarColor, AppColors.background);
+    expect(style.systemNavigationBarDividerColor, AppColors.divider);
+    expect(style.systemNavigationBarIconBrightness, Brightness.dark);
+    expect(style.systemStatusBarContrastEnforced, isFalse);
+    expect(style.systemNavigationBarContrastEnforced, isFalse);
+    expect(theme.appBarTheme.systemOverlayStyle, style);
   });
 }

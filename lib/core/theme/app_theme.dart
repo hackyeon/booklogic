@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../constants/app_dimensions.dart';
 import 'app_colors.dart';
 
 class AppTheme {
   const AppTheme._();
+
+  static const systemUiOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: AppColors.background,
+    systemNavigationBarDividerColor: AppColors.divider,
+    systemNavigationBarIconBrightness: Brightness.dark,
+    systemStatusBarContrastEnforced: false,
+    systemNavigationBarContrastEnforced: false,
+  );
 
   static ThemeData light() {
     final colorScheme =
@@ -37,6 +48,7 @@ class AppTheme {
         foregroundColor: AppColors.textPrimary,
         centerTitle: true,
         elevation: 0,
+        systemOverlayStyle: systemUiOverlayStyle,
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(

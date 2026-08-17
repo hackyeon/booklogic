@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/ads/application/ad_bootstrap_controller.dart';
 import '../core/ads/application/ad_session_coordinator.dart';
@@ -203,35 +204,38 @@ class _BookLogicAppState extends State<BookLogicApp>
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: AppStrings.appTitle,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      initialRoute: AppRoutes.home,
-      routes: {
-        AppRoutes.home: (_) => HomeScreen(
-          progressController: _progressController,
-          persistenceHealthController: _persistenceHealthController,
-        ),
-        AppRoutes.game: (_) => GameScreen(
-          level: _progressController.currentLevel,
-          generatorVersion: _progressController.generatorVersion,
-          progressController: _progressController,
-          learningProgressController: _learningProgressController,
-          feedbackSettingsController: _feedbackSettingsController,
-          soundPlayer: widget.soundPlayer,
-          hapticPlayer: widget.hapticPlayer,
-          nextLevelAdGate: _nextLevelAdGate,
-          adSessionCoordinator: _adSessionCoordinator,
-          enableTutorial: true,
-        ),
-        AppRoutes.settings: (_) => SettingsScreen(
-          feedbackSettingsController: _feedbackSettingsController,
-          adConsentController: _adConsentController,
-          soundPlayer: widget.soundPlayer,
-          hapticPlayer: widget.hapticPlayer,
-        ),
-      },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: AppTheme.systemUiOverlayStyle,
+      child: MaterialApp(
+        title: AppStrings.appTitle,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        initialRoute: AppRoutes.home,
+        routes: {
+          AppRoutes.home: (_) => HomeScreen(
+            progressController: _progressController,
+            persistenceHealthController: _persistenceHealthController,
+          ),
+          AppRoutes.game: (_) => GameScreen(
+            level: _progressController.currentLevel,
+            generatorVersion: _progressController.generatorVersion,
+            progressController: _progressController,
+            learningProgressController: _learningProgressController,
+            feedbackSettingsController: _feedbackSettingsController,
+            soundPlayer: widget.soundPlayer,
+            hapticPlayer: widget.hapticPlayer,
+            nextLevelAdGate: _nextLevelAdGate,
+            adSessionCoordinator: _adSessionCoordinator,
+            enableTutorial: true,
+          ),
+          AppRoutes.settings: (_) => SettingsScreen(
+            feedbackSettingsController: _feedbackSettingsController,
+            adConsentController: _adConsentController,
+            soundPlayer: widget.soundPlayer,
+            hapticPlayer: widget.hapticPlayer,
+          ),
+        },
+      ),
     );
   }
 }
