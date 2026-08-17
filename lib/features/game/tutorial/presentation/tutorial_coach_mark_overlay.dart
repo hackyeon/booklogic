@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
@@ -64,10 +66,6 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     final overlay = LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
-        final cardRect = _messageCardRect(
-          screenSize: size,
-          targetRect: targetRect,
-        );
 
         return Stack(
           children: [
@@ -104,23 +102,27 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
                   child: const SizedBox.expand(),
                 ),
               ),
-            Positioned.fromRect(
-              rect: cardRect,
-              child: IgnorePointer(
-                ignoring:
-                    widget.onTargetTap != null &&
-                    !widget.step.requiresAcknowledgement,
-                child: TutorialMessageCard(
-                  message: widget.step.message,
-                  secondaryMessage: widget.step.secondaryMessage,
-                  stepLabel:
-                      '튜토리얼 ${widget.stepIndex + 1}/${widget.totalStepCount}',
-                  actionLabel: widget.step.actionLabel,
-                  onAction: widget.step.requiresAcknowledgement
-                      ? widget.onAcknowledge
-                      : null,
-                  canSkip: widget.step.allowSkip,
-                  onSkip: _confirmSkip,
+            Positioned.fill(
+              child: CustomSingleChildLayout(
+                delegate: _TutorialMessageLayoutDelegate(
+                  targetRect: targetRect,
+                ),
+                child: IgnorePointer(
+                  ignoring:
+                      widget.onTargetTap != null &&
+                      !widget.step.requiresAcknowledgement,
+                  child: TutorialMessageCard(
+                    message: widget.step.message,
+                    secondaryMessage: widget.step.secondaryMessage,
+                    stepLabel:
+                        '튜토리얼 ${widget.stepIndex + 1}/${widget.totalStepCount}',
+                    actionLabel: widget.step.actionLabel,
+                    onAction: widget.step.requiresAcknowledgement
+                        ? widget.onAcknowledge
+                        : null,
+                    canSkip: widget.step.allowSkip,
+                    onSkip: _confirmSkip,
+                  ),
                 ),
               ),
             ),
@@ -176,36 +178,6 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
         ),
       ),
     ];
-  }
-
-  Rect _messageCardRect({required Size screenSize, required Rect? targetRect}) {
-    const horizontalPadding = AppDimensions.screenPadding;
-    const verticalPadding = AppDimensions.screenPadding;
-    final width = (screenSize.width - horizontalPadding * 2).clamp(
-      240.0,
-      380.0,
-    );
-    const height = 200.0;
-    final left = targetRect == null
-        ? (screenSize.width - width) / 2
-        : (targetRect.center.dx - width / 2).clamp(
-            horizontalPadding,
-            screenSize.width - width - horizontalPadding,
-          );
-    final belowTop = (targetRect?.bottom ?? 0) + AppDimensions.mediumSpacing;
-    final aboveTop =
-        (targetRect?.top ?? (screenSize.height / 2)) -
-        height -
-        AppDimensions.mediumSpacing;
-    final hasRoomBelow =
-        belowTop + height + verticalPadding < screenSize.height;
-    final top = targetRect == null
-        ? (screenSize.height - height - verticalPadding)
-        : hasRoomBelow
-        ? belowTop
-        : aboveTop.clamp(verticalPadding, screenSize.height - height);
-
-    return Rect.fromLTWH(left, top, width, height);
   }
 
   Rect? _paddedTargetRect(BuildContext context) {
@@ -295,6 +267,62 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     if (shouldSkip == true && mounted) {
       widget.onSkipConfirmed();
     }
+  }
+}
+
+class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
+  const _TutorialMessageLayoutDelegate({required this.targetRect});
+
+  final Rect? targetRect;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final availableWidth = math.max(
+      0.0,
+      constraints.maxWidth - AppDimensions.screenPadding * 2,
+    );
+    final availableHeight = math.max(
+      0.0,
+      constraints.maxHeight - AppDimensions.screenPadding * 2,
+    );
+    return BoxConstraints(
+      maxWidth: math.min(380, availableWidth),
+      maxHeight: availableHeight,
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    const edgePadding = AppDimensions.screenPadding;
+    final horizontalLimit = math.max(
+      edgePadding,
+      size.width - childSize.width - edgePadding,
+    );
+    final desiredLeft = targetRect == null
+        ? (size.width - childSize.width) / 2
+        : targetRect!.center.dx - childSize.width / 2;
+    final left = desiredLeft.clamp(edgePadding, horizontalLimit);
+
+    final verticalLimit = math.max(
+      edgePadding,
+      size.height - childSize.height - edgePadding,
+    );
+    if (targetRect == null) {
+      return Offset(left, verticalLimit);
+    }
+
+    final belowTop = targetRect!.bottom + AppDimensions.mediumSpacing;
+    final hasRoomBelow =
+        belowTop + childSize.height + edgePadding <= size.height;
+    final desiredTop = hasRoomBelow
+        ? belowTop
+        : targetRect!.top - childSize.height - AppDimensions.mediumSpacing;
+    return Offset(left, desiredTop.clamp(edgePadding, verticalLimit));
+  }
+
+  @override
+  bool shouldRelayout(covariant _TutorialMessageLayoutDelegate oldDelegate) {
+    return oldDelegate.targetRect != targetRect;
   }
 }
 

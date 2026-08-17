@@ -35,52 +35,61 @@ class TutorialMessageCard extends StatelessWidget {
         color: colorScheme.surfaceContainerHigh,
         elevation: 6,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(AppDimensions.mediumSpacing),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                stepLabel,
-                style: textTheme.labelLarge?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: AppDimensions.smallSpacing),
-              Text(message, style: textTheme.bodyLarge),
-              if (secondaryMessage != null) ...[
-                const SizedBox(height: AppDimensions.smallSpacing),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.mediumSpacing),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Text(
-                  secondaryMessage!,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                  stepLabel,
+                  style: textTheme.labelLarge?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              ],
-              const SizedBox(height: AppDimensions.mediumSpacing),
-              Wrap(
-                alignment: WrapAlignment.end,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppDimensions.smallSpacing,
-                runSpacing: AppDimensions.smallSpacing,
-                children: [
-                  if (canSkip)
-                    TextButton(
-                      key: const Key('tutorial_skip_button'),
-                      onPressed: onSkip,
-                      child: const Text('튜토리얼 건너뛰기'),
+                const SizedBox(height: AppDimensions.smallSpacing),
+                Text(message, style: textTheme.bodyLarge),
+                if (secondaryMessage != null) ...[
+                  const SizedBox(height: AppDimensions.smallSpacing),
+                  Text(
+                    secondaryMessage!,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                  if (actionLabel != null && onAction != null)
-                    FilledButton(
-                      key: const Key('tutorial_acknowledge_button'),
-                      onPressed: onAction,
-                      child: Text(actionLabel!),
-                    ),
+                  ),
                 ],
-              ),
-            ],
+                const SizedBox(height: AppDimensions.mediumSpacing),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppDimensions.smallSpacing,
+                  runSpacing: AppDimensions.smallSpacing,
+                  children: [
+                    if (canSkip)
+                      TextButton(
+                        key: const Key('tutorial_skip_button'),
+                        onPressed: onSkip,
+                        child: const Text('튜토리얼 건너뛰기'),
+                      ),
+                    if (actionLabel != null && onAction != null)
+                      FilledButton(
+                        key: const Key('tutorial_acknowledge_button'),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(
+                            0,
+                            AppDimensions.buttonHeight,
+                          ),
+                        ),
+                        onPressed: onAction,
+                        child: Text(actionLabel!),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

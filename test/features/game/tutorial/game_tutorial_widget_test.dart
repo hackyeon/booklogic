@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_controller.dart';
+import 'package:booklogic/core/theme/app_theme.dart';
 import 'package:booklogic/features/game/generator/generator_config.dart';
 import 'package:booklogic/features/game/generator/stage_generator.dart';
 import 'package:booklogic/features/game/presentation/game_screen.dart';
@@ -10,6 +11,7 @@ import 'package:booklogic/features/game/presentation/widgets/book_widget.dart';
 import 'package:booklogic/features/game/tutorial/application/learning_progress_controller.dart';
 import 'package:booklogic/features/game/tutorial/application/tutorial_solve_path_resolver.dart';
 import 'package:booklogic/features/game/tutorial/domain/learning_progress.dart';
+import 'package:booklogic/features/game/tutorial/presentation/tutorial_message_card.dart';
 
 import '../../../helpers/fake_game_progress_store.dart';
 import '../../../helpers/fake_learning_progress_store.dart';
@@ -77,6 +79,57 @@ void main() {
       learningController.dispose();
     },
   );
+
+  testWidgets('tutorial actions fit inside the card on a compact screen', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(580, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const generator = StageGenerator();
+    const resolver = TutorialSolvePathResolver();
+    final stage = generator.generate(level: 1, generatorVersion: 1);
+    final target = resolver.resolveFirstSwap(stage)!;
+    final progressController = _progressController();
+    final learningController = LearningProgressController(
+      store: FakeLearningProgressStore(progress: LearningProgress()),
+    );
+    addTearDown(progressController.dispose);
+    addTearDown(learningController.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: GameScreen(
+          level: 1,
+          generatorVersion: GeneratorConfig.currentVersion,
+          progressController: progressController,
+          stageGenerator: generator,
+          learningProgressController: learningController,
+          enableTutorial: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(ValueKey(target.firstBookId)));
+    await tester.pumpAndSettle();
+
+    final cardRect = tester.getRect(find.byType(TutorialMessageCard));
+    final skipRect = tester.getRect(
+      find.byKey(const Key('tutorial_skip_button')),
+    );
+    final acknowledgeRect = tester.getRect(
+      find.byKey(const Key('tutorial_acknowledge_button')),
+    );
+
+    expect(skipRect.bottom, lessThanOrEqualTo(cardRect.bottom));
+    expect(acknowledgeRect.bottom, lessThanOrEqualTo(cardRect.bottom));
+    expect(cardRect.bottom, lessThanOrEqualTo(800));
+    expect(tester.takeException(), isNull);
+  });
 }
 
 GameProgressController _progressController() {
