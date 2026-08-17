@@ -51,8 +51,8 @@ void main() {
     test('sorts checks and derives blocked status deterministically', () {
       final report = ReleaseReadinessReport.fromChecks(
         appVersion: '1.0.0+1',
-        androidApplicationId: 'com.hack.booklogic.booklogic',
-        iosBundleIdentifier: 'com.hack.booklogic.booklogic',
+        androidApplicationId: 'com.hack.booklogic',
+        iosBundleIdentifier: 'com.hack.booklogic',
         generatorV1Checksum: 1,
         generatorV2Checksum: 2,
         checks: [
@@ -93,8 +93,8 @@ void main() {
     test('manual items keep report out of ready state', () {
       final report = ReleaseReadinessReport.fromChecks(
         appVersion: '1.0.0+1',
-        androidApplicationId: 'com.hack.booklogic.booklogic',
-        iosBundleIdentifier: 'com.hack.booklogic.booklogic',
+        androidApplicationId: 'com.hack.booklogic',
+        iosBundleIdentifier: 'com.hack.booklogic',
         generatorV1Checksum: 1,
         generatorV2Checksum: 2,
         checks: [

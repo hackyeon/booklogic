@@ -1,4 +1,4 @@
-package com.hack.booklogic.booklogic
+package com.hack.booklogic
 
 import io.flutter.embedding.android.FlutterActivity
 

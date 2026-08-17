@@ -11,8 +11,8 @@ void main() {
 
     expect(baseline['baselineVersion'], 1);
     expect(baseline['appVersion'], '1.0.0+1');
-    expect(baseline['androidApplicationId'], 'com.hack.booklogic.booklogic');
-    expect(baseline['iosBundleIdentifier'], 'com.hack.booklogic.booklogic');
+    expect(baseline['androidApplicationId'], 'com.hack.booklogic');
+    expect(baseline['iosBundleIdentifier'], 'com.hack.booklogic');
     expect(baseline['minimumSupportedLevel'], 1);
     expect(baseline['maximumSupportedLevel'], 400);
 
