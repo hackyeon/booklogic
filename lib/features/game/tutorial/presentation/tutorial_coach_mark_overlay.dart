@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../domain/tutorial_step.dart';
 import 'tutorial_message_card.dart';
 import 'tutorial_target_registry.dart';
@@ -61,7 +62,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
   @override
   Widget build(BuildContext context) {
     final targetRect = _paddedTargetRect(context);
-    final color = Colors.black.withValues(alpha: 0.48);
+    const color = AppColors.tutorialScrim;
 
     final overlay = LayoutBuilder(
       builder: (context, constraints) {

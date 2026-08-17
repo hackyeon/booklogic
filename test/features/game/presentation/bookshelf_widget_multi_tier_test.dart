@@ -26,6 +26,8 @@ void main() {
       expect(find.byKey(const Key('bookshelf_tier_2')), findsNothing);
       expect(find.byKey(const Key('bookshelf_tier_label_0')), findsOneWidget);
       expect(find.byKey(const Key('bookshelf_tier_label_1')), findsOneWidget);
+      expect(find.byKey(const Key('bookshelf_plank_0')), findsOneWidget);
+      expect(find.byKey(const Key('bookshelf_plank_1')), findsOneWidget);
       expect(find.text('1단'), findsOneWidget);
       expect(find.text('2단'), findsOneWidget);
       for (final id in _ids(multiTierTwoTierInitialPlacements)) {
@@ -41,6 +43,7 @@ void main() {
         greaterThan(_bookTopOf(tester, 'purple_leaf')),
       );
       _expectBooksDoNotOverlap(tester, _ids(multiTierTwoTierInitialPlacements));
+      _expectBooksRestOnTierPlanks(tester, multiTierTwoTierInitialPlacements);
       expect(tester.takeException(), isNull);
     });
 
@@ -61,6 +64,9 @@ void main() {
       expect(find.text('1단'), findsOneWidget);
       expect(find.text('2단'), findsOneWidget);
       expect(find.text('3단'), findsOneWidget);
+      expect(find.byKey(const Key('bookshelf_plank_0')), findsOneWidget);
+      expect(find.byKey(const Key('bookshelf_plank_1')), findsOneWidget);
+      expect(find.byKey(const Key('bookshelf_plank_2')), findsOneWidget);
       for (final id in _ids(multiTierThreeTierPlacements)) {
         expect(find.byKey(Key('book_$id')), findsOneWidget);
       }
@@ -78,6 +84,7 @@ void main() {
         moreOrLessEquals(_bookCenterXOf(tester, 'purple_leaf'), epsilon: 1),
       );
       _expectBooksDoNotOverlap(tester, _ids(multiTierThreeTierPlacements));
+      _expectBooksRestOnTierPlanks(tester, multiTierThreeTierPlacements);
       expect(tester.takeException(), isNull);
     });
 
@@ -104,6 +111,7 @@ void main() {
         expect(find.byKey(Key('book_$id')), findsOneWidget);
       }
       _expectBooksDoNotOverlap(tester, _ids(multiTierThreeBySixPlacements));
+      _expectBooksRestOnTierPlanks(tester, multiTierThreeBySixPlacements);
       expect(tester.takeException(), isNull);
     });
   });
@@ -336,6 +344,25 @@ List<String> _ids(List<BookPlacement> placements) {
 
 double _bookCenterXOf(WidgetTester tester, String bookId) {
   return tester.getCenter(find.byKey(Key('book_$bookId'))).dx;
+}
+
+void _expectBooksRestOnTierPlanks(
+  WidgetTester tester,
+  List<BookPlacement> placements,
+) {
+  for (final placement in placements) {
+    final bookRect = tester.getRect(
+      find.byKey(Key('book_${placement.book.id}')),
+    );
+    final plankRect = tester.getRect(
+      find.byKey(Key('bookshelf_plank_${placement.position.tierIndex}')),
+    );
+    expect(
+      (bookRect.bottom - plankRect.top).abs(),
+      lessThanOrEqualTo(1),
+      reason: placement.book.id,
+    );
+  }
 }
 
 double _bookTopOf(WidgetTester tester, String bookId) {

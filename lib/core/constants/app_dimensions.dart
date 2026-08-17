@@ -2,6 +2,10 @@ class AppDimensions {
   const AppDimensions._();
 
   static const screenPadding = 24.0;
+  static const gameHeaderHorizontalPadding = 18.0;
+  static const gameHeaderVerticalPadding = 8.0;
+  static const gameHeaderControlSize = 44.0;
+  static const gameSectionGap = 12.0;
   static const sectionSpacing = 24.0;
   static const smallSpacing = 8.0;
   static const mediumSpacing = 16.0;
@@ -15,6 +19,13 @@ class AppDimensions {
   static const bookSpacing = 10.0;
   static const bookAspectRatio = 0.44;
   static const bookshelfShelfHeight = 14.0;
+  static const shelfTierGap = 12.0;
+  static const shelfLabelHeight = 22.0;
+  static const shelfLabelGap = 6.0;
+  static const shelfHorizontalExtension = 14.0;
+  static const shelfPreferredSlotExtent = 68.0;
+  static const shelfMaxBookWidth = 64.0;
+  static const statusBarRadius = 20.0;
   static const bookCornerRadius = 12.0;
   static const bookSelectionLift = 8.0;
   static const bookSelectedScale = 1.05;

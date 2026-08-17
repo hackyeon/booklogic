@@ -7,13 +7,25 @@ class AppTheme {
   const AppTheme._();
 
   static ThemeData light() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      secondary: AppColors.secondary,
-      surface: AppColors.surface,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          onPrimary: AppColors.onStrongColor,
+          primaryContainer: AppColors.primarySoft,
+          onPrimaryContainer: AppColors.primaryStrong,
+          secondary: AppColors.secondary,
+          tertiary: AppColors.tertiary,
+          surface: AppColors.surface,
+          onSurface: AppColors.textPrimary,
+          onSurfaceVariant: AppColors.textSecondary,
+          outline: AppColors.primary,
+          outlineVariant: AppColors.divider,
+          error: AppColors.error,
+          errorContainer: AppColors.errorContainer,
+        );
 
     return ThemeData(
       useMaterial3: true,
@@ -45,6 +57,10 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onStrongColor,
+          disabledBackgroundColor: AppColors.divider,
+          disabledForegroundColor: AppColors.textSecondary,
           minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
@@ -54,6 +70,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primaryStrong,
           minimumSize: const Size.fromHeight(AppDimensions.buttonHeight),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppDimensions.buttonRadius),
@@ -61,6 +78,10 @@ class AppTheme {
           side: const BorderSide(color: AppColors.primary),
           textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
         ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
       ),
     );
   }

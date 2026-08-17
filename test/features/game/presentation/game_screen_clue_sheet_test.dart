@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:booklogic/core/constants/app_durations.dart';
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_controller.dart';
+import 'package:booklogic/core/theme/app_theme.dart';
 import 'package:booklogic/features/game/domain/book_placement.dart';
 import 'package:booklogic/features/game/domain/book_position.dart';
 import 'package:booklogic/features/game/domain/clue_evaluator.dart';
@@ -50,6 +51,29 @@ void main() {
     expect(find.byKey(const Key('clue_bottom_sheet')), findsNothing);
     expect(_visibleBookGridOrder(tester, _stageBookIds(51)), orderBeforeSheet);
     expect(find.text('교환 0회'), findsOneWidget);
+  });
+
+  testWidgets('game chrome uses a HUD header and keeps restart in status bar', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pumpGame(tester, level: 1);
+
+    final header = find.byKey(const Key('game_header'));
+    final statusBar = find.byKey(const Key('game_status_bar'));
+    final restart = find.byKey(const Key('game_restart_button'));
+
+    expect(find.byType(AppBar), findsNothing);
+    expect(find.byKey(const Key('game_back_button')), findsOneWidget);
+    expect(find.byKey(const Key('game_level_label')), findsOneWidget);
+    expect(find.byKey(const Key('game_settings_button')), findsOneWidget);
+    expect(find.descendant(of: header, matching: restart), findsNothing);
+    expect(find.descendant(of: statusBar, matching: restart), findsOneWidget);
+    expect(find.bySemanticsLabel('뒤로 가기'), findsOneWidget);
+    expect(find.bySemanticsLabel('레벨 1'), findsOneWidget);
+    expect(find.bySemanticsLabel('설정'), findsOneWidget);
+    expect(find.bySemanticsLabel('현재 레벨 다시 시작'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets(
@@ -144,9 +168,44 @@ void main() {
         tierIndex++
       ) {
         expect(find.byKey(Key('bookshelf_tier_$tierIndex')), findsOneWidget);
+        expect(find.byKey(Key('bookshelf_plank_$tierIndex')), findsOneWidget);
       }
+      _expectBooksRestOnShelves(tester, _stage(level));
       _expectBooksStayAboveStatusBar(tester, _stageBookIds(level));
       expect(tester.takeException(), isNull, reason: 'Level $level');
+    }
+  });
+
+  testWidgets('representative shelves fit common phone sizes', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final size in [const Size(390, 844), const Size(430, 932)]) {
+      tester.view.physicalSize = size;
+      for (final level in [1, 51, 201, 281, 400]) {
+        await _pumpGame(tester, level: level);
+        _expectBooksRestOnShelves(tester, _stage(level));
+        _expectBooksStayAboveStatusBar(tester, _stageBookIds(level));
+        expect(tester.takeException(), isNull, reason: '$size Level $level');
+      }
+    }
+  });
+
+  testWidgets('game HUD and shelves support large text without scrolling', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(430, 932);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final textScale in [1.0, 1.3, 2.0]) {
+      await _pumpGame(tester, level: 400, textScale: textScale);
+      expect(find.byType(SingleChildScrollView), findsNothing);
+      _expectBooksRestOnShelves(tester, _stage(400));
+      _expectBooksStayAboveStatusBar(tester, _stageBookIds(400));
+      expect(tester.takeException(), isNull, reason: 'scale $textScale');
     }
   });
 
@@ -296,6 +355,7 @@ Future<void> _pumpGame(
   );
   await tester.pumpWidget(
     MaterialApp(
+      theme: AppTheme.light(),
       home: MediaQuery(
         data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
         child: GameScreen(
@@ -309,6 +369,22 @@ Future<void> _pumpGame(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+void _expectBooksRestOnShelves(WidgetTester tester, GeneratedStage stage) {
+  for (final placement in stage.initialPlacements) {
+    final bookRect = tester.getRect(
+      find.byKey(Key('book_${placement.book.id}')),
+    );
+    final plankRect = tester.getRect(
+      find.byKey(Key('bookshelf_plank_${placement.position.tierIndex}')),
+    );
+    expect(
+      (bookRect.bottom - plankRect.top).abs(),
+      lessThanOrEqualTo(1),
+      reason: placement.book.id,
+    );
+  }
 }
 
 GameProgressController _progressController({

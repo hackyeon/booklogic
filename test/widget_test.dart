@@ -59,13 +59,52 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.appTitle), findsOneWidget);
+    expect(find.text(AppStrings.appSubtitle), findsOneWidget);
+    expect(
+      find.byKey(const Key('home_bookshelf_illustration')),
+      findsOneWidget,
+    );
     expect(find.byKey(const Key('home_continue_button')), findsOneWidget);
+    expect(find.byKey(const Key('home_settings_button')), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('home_continue_button')));
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.levelOne), findsOneWidget);
     expect(find.text(AppStrings.gameSelectionInstruction), findsOneWidget);
+  });
+
+  testWidgets('game HUD back button returns to home', (tester) async {
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('home_continue_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('game_header')), findsOneWidget);
+    expect(find.byType(AppBar), findsNothing);
+    await tester.tap(find.byKey(const Key('game_back_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.appTitle), findsOneWidget);
+  });
+
+  testWidgets('home visual structure fits a compact screen', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.text(AppStrings.appTitle), findsOneWidget);
+    expect(
+      find.byKey(const Key('home_bookshelf_illustration')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('home_continue_button')), findsOneWidget);
+    expect(find.byKey(const Key('home_settings_button')), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('opens settings screen from home', (tester) async {
@@ -2880,7 +2919,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Level 2'), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.appTitle), findsOneWidget);
@@ -3233,7 +3272,7 @@ void main() {
     await tester.tap(find.byKey(const Key('home_continue_button')));
     await tester.pumpAndSettle();
     await _goToGeneratedLevel2(tester);
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
 
     expect(find.text('계속하기 · Level 2'), findsOneWidget);
@@ -3340,7 +3379,7 @@ void main() {
     await _tapReverseSwapStep(tester, level: 1, reverseIndex: 1);
 
     expect(find.text(AppStrings.clearingBooks), findsOneWidget);
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
     await _finishClear(tester);
 
@@ -3350,7 +3389,7 @@ void main() {
     await tester.tap(find.byKey(const Key('home_continue_button')));
     await tester.pumpAndSettle();
     await _clearGeneratedLevel1Game(tester);
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
 
     expect(find.text(AppStrings.appTitle), findsOneWidget);
@@ -4150,7 +4189,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.levelOne), findsOneWidget);
 
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
     expect(find.text(AppStrings.appTitle), findsOneWidget);
   });
@@ -4169,7 +4208,7 @@ void main() {
       reverseIndex: 0,
       finishSwap: false,
     );
-    await tester.pageBack();
+    await tester.tap(find.byKey(const Key('game_back_button')));
     await tester.pumpAndSettle();
     await tester.pump(AppDurations.bookSwap);
 

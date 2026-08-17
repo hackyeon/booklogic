@@ -59,39 +59,45 @@ class BookshelfWidget extends StatelessWidget {
         final shelfWidth = maxAvailableWidth > AppDimensions.bookshelfMaxWidth
             ? AppDimensions.bookshelfMaxWidth
             : maxAvailableWidth;
-        final shelfHeight = constraints.maxHeight.isFinite
+        final maxAvailableHeight = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : BookshelfLayoutMetrics.preferredHeightFor(tierCount);
+        final actualSize = BookshelfLayoutMetrics.contentSizeFor(
+          availableSize: Size(shelfWidth, maxAvailableHeight),
+          tierCount: tierCount,
+          booksPerTier: booksPerTier,
+        );
         final metrics = BookshelfLayoutMetrics(
-          size: Size(shelfWidth, shelfHeight),
+          size: actualSize,
           tierCount: tierCount,
           booksPerTier: booksPerTier,
         );
 
-        return Center(
-          child: AnimatedContainer(
+        return Align(
+          alignment: const Alignment(0, -0.08),
+          child: KeyedSubtree(
             key: isShelfGlowing ? const Key('bookshelf_clear_glow') : null,
-            duration: AppDurations.clueStateChange,
-            curve: Curves.easeOut,
-            padding: isShelfGlowing ? const EdgeInsets.all(6) : EdgeInsets.zero,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
-              border: isShelfGlowing
-                  ? Border.all(color: AppColors.clearAccent, width: 2)
-                  : null,
-              boxShadow: isShelfGlowing
-                  ? const [
-                      BoxShadow(
-                        color: AppColors.clearGlow,
-                        blurRadius: 18,
-                        offset: Offset(0, 6),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: SizedBox(
-              width: shelfWidth,
-              height: shelfHeight,
+            child: AnimatedContainer(
+              key: const Key('bookshelf_surface'),
+              duration: AppDurations.clueStateChange,
+              curve: Curves.easeOut,
+              width: actualSize.width,
+              height: actualSize.height,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
+                border: isShelfGlowing
+                    ? Border.all(color: AppColors.clearAccent, width: 2)
+                    : null,
+                boxShadow: isShelfGlowing
+                    ? const [
+                        BoxShadow(
+                          color: AppColors.clearGlow,
+                          blurRadius: 18,
+                          offset: Offset(0, 6),
+                        ),
+                      ]
+                    : null,
+              ),
               child: IgnorePointer(
                 ignoring: isInteractionLocked,
                 child: Stack(
@@ -264,31 +270,34 @@ class _TierBackground extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: Container(
-                key: Key('bookshelf_tier_$tierIndex'),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(
-                    AppDimensions.smallSpacing,
-                  ),
-                  border: Border.all(color: AppColors.divider),
-                ),
-              ),
+              child: SizedBox.expand(key: Key('bookshelf_tier_$tierIndex')),
             ),
             Positioned(
               left: labelRect.left - tierRect.left,
-              top: 0,
+              top: labelRect.top - tierRect.top,
               width: labelRect.width,
               height: labelRect.height,
-              child: Center(
-                child: Semantics(
-                  label: '${tierIndex + 1}단',
-                  child: Text(
-                    '${tierIndex + 1}단',
-                    key: Key('bookshelf_tier_label_$tierIndex'),
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w700,
+              child: Semantics(
+                label: '${tierIndex + 1}단',
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.primarySoft,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${tierIndex + 1}단',
+                        key: Key('bookshelf_tier_label_$tierIndex'),
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: AppColors.primaryStrong,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
                     ),
                   ),
                 ),
@@ -299,7 +308,7 @@ class _TierBackground extends StatelessWidget {
               top: plankRect.top - tierRect.top,
               width: plankRect.width,
               height: plankRect.height,
-              child: const _ShelfBoard(),
+              child: _ShelfBoard(tierIndex: tierIndex),
             ),
           ],
         ),
@@ -365,22 +374,55 @@ class _PositionedBook extends StatelessWidget {
 }
 
 class _ShelfBoard extends StatelessWidget {
-  const _ShelfBoard();
+  const _ShelfBoard({required this.tierIndex});
+
+  final int tierIndex;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bookshelfBrown,
-        borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x26000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
+    return Stack(
+      key: Key('bookshelf_plank_$tierIndex'),
+      children: [
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.shelf,
+              borderRadius: BorderRadius.circular(6),
+              boxShadow: const [
+                BoxShadow(
+                  color: AppColors.shelfShadow,
+                  blurRadius: 5,
+                  offset: Offset(0, 3),
+                ),
+              ],
+            ),
           ),
-        ],
-      ),
+        ),
+        const Positioned(
+          left: 5,
+          top: 1,
+          right: 5,
+          height: 2,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.shelfHighlight,
+              borderRadius: BorderRadius.all(Radius.circular(2)),
+            ),
+          ),
+        ),
+        const Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 4,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.shelfEdge,
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(6)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

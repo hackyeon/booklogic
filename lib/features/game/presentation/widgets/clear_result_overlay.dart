@@ -68,7 +68,7 @@ class ClearResultOverlay extends StatelessWidget {
                       border: Border.all(color: AppColors.clearAccent),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x55000000),
+                          color: AppColors.elevatedShadow,
                           blurRadius: 22,
                           offset: Offset(0, 10),
                         ),

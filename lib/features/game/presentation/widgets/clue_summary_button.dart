@@ -27,12 +27,17 @@ class ClueSummaryButton extends StatelessWidget {
       child: TextButton(
         onPressed: effectiveOnPressed,
         style: TextButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
           minimumSize: const Size(88, 44),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimensions.smallSpacing,
             vertical: AppDimensions.smallSpacing,
           ),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

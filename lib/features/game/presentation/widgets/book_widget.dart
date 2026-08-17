@@ -36,28 +36,28 @@ class BookWidget extends StatelessWidget {
       top: Radius.circular(AppDimensions.bookCornerRadius),
       bottom: Radius.circular(AppDimensions.smallSpacing),
     );
-    final lift = isSelected
-        ? AppDimensions.bookSelectionLift
-        : isClearActive
+    final lift = isClearActive
         ? AppDimensions.bookClearLift
+        : isSelected
+        ? AppDimensions.bookSelectionLift
         : isClueHighlighted
         ? AppDimensions.smallSpacing
         : 0.0;
-    final scale = isSelected
-        ? AppDimensions.bookSelectedScale
-        : isClearActive
+    final scale = isClearActive
         ? AppDimensions.bookClearScale
+        : isSelected
+        ? AppDimensions.bookSelectedScale
         : isClueHighlighted
         ? 1.035
         : 1.0;
-    final borderColor = isSelected
-        ? AppColors.selectedBorder
-        : isClearActive
+    final borderColor = isClearActive
         ? AppColors.clearAccent
+        : isSelected
+        ? AppColors.selectedBorder
         : isClueHighlighted
-        ? Theme.of(context).colorScheme.tertiary
+        ? AppColors.clueHighlight
         : visual.borderColor;
-    final borderWidth = isSelected || isClearActive
+    final borderWidth = isClearActive || isSelected
         ? AppDimensions.bookSelectedBorderWidth
         : isClueHighlighted
         ? 2.0
@@ -103,21 +103,25 @@ class BookWidget extends StatelessWidget {
                 border: Border.all(color: borderColor, width: borderWidth),
                 boxShadow: [
                   BoxShadow(
-                    color: isSelected
-                        ? const Color(0x55000000)
-                        : isClearActive
+                    color: isClearActive
                         ? AppColors.clearGlow
+                        : isSelected
+                        ? AppColors.selectedBookShadow
                         : isClueHighlighted
-                        ? Theme.of(
-                            context,
-                          ).colorScheme.tertiary.withValues(alpha: 0.32)
-                        : const Color(0x26000000),
-                    blurRadius: isSelected || isClearActive || isClueHighlighted
-                        ? 14
-                        : 8,
+                        ? AppColors.clueHighlight.withValues(alpha: 0.34)
+                        : AppColors.bookShadow,
+                    blurRadius: isClearActive || isSelected
+                        ? 11
+                        : isClueHighlighted
+                        ? 9
+                        : 5,
                     offset: Offset(
                       0,
-                      isSelected || isClearActive || isClueHighlighted ? 7 : 4,
+                      isClearActive || isSelected
+                          ? 4
+                          : isClueHighlighted
+                          ? 3
+                          : 2,
                     ),
                   ),
                 ],
@@ -198,34 +202,34 @@ extension BookColorVisualExtension on BookColor {
   BookVisual get visual {
     return switch (this) {
       BookColor.blue => const BookVisual(
-        backgroundColor: Color(0xFF2F6FED),
-        foregroundColor: Colors.white,
-        borderColor: Color(0xFF1B4FAF),
+        backgroundColor: AppColors.bookBlue,
+        foregroundColor: AppColors.onStrongColor,
+        borderColor: AppColors.bookBlueEdge,
       ),
       BookColor.red => const BookVisual(
-        backgroundColor: Color(0xFFD94D4D),
-        foregroundColor: Colors.white,
-        borderColor: Color(0xFFA83232),
+        backgroundColor: AppColors.bookRed,
+        foregroundColor: AppColors.onStrongColor,
+        borderColor: AppColors.bookRedEdge,
       ),
       BookColor.yellow => const BookVisual(
-        backgroundColor: Color(0xFFE7B93E),
+        backgroundColor: AppColors.bookYellow,
         foregroundColor: AppColors.textPrimary,
-        borderColor: Color(0xFFC6921E),
+        borderColor: AppColors.bookYellowEdge,
       ),
       BookColor.green => const BookVisual(
-        backgroundColor: Color(0xFF34A66A),
-        foregroundColor: Colors.white,
-        borderColor: Color(0xFF237849),
+        backgroundColor: AppColors.bookGreen,
+        foregroundColor: AppColors.onStrongColor,
+        borderColor: AppColors.bookGreenEdge,
       ),
       BookColor.purple => const BookVisual(
-        backgroundColor: Color(0xFF8560C8),
-        foregroundColor: Colors.white,
-        borderColor: Color(0xFF5F3EA1),
+        backgroundColor: AppColors.bookPurple,
+        foregroundColor: AppColors.onStrongColor,
+        borderColor: AppColors.bookPurpleEdge,
       ),
       BookColor.orange => const BookVisual(
-        backgroundColor: Color(0xFFE47A32),
-        foregroundColor: Colors.white,
-        borderColor: Color(0xFFB8531F),
+        backgroundColor: AppColors.bookOrange,
+        foregroundColor: AppColors.onStrongColor,
+        borderColor: AppColors.bookOrangeEdge,
       ),
     };
   }

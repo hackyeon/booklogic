@@ -148,6 +148,58 @@ void main() {
       expect(rect.width, greaterThanOrEqualTo(0));
       expect(rect.height, greaterThanOrEqualTo(0));
     });
+
+    test('uses a tier-driven content size instead of all available height', () {
+      const availableSize = Size(420, 700);
+      final oneTier = BookshelfLayoutMetrics.contentSizeFor(
+        availableSize: availableSize,
+        tierCount: 1,
+        booksPerTier: 4,
+      );
+      final twoTier = BookshelfLayoutMetrics.contentSizeFor(
+        availableSize: availableSize,
+        tierCount: 2,
+        booksPerTier: 4,
+      );
+      final threeTier = BookshelfLayoutMetrics.contentSizeFor(
+        availableSize: availableSize,
+        tierCount: 3,
+        booksPerTier: 4,
+      );
+
+      expect(oneTier.height, lessThan(twoTier.height));
+      expect(twoTier.height, lessThan(threeTier.height));
+      expect(threeTier.height, lessThan(availableSize.height));
+      expect(oneTier.width, lessThan(availableSize.width));
+    });
+
+    test('aligns every book bottom with its own shelf plank', () {
+      for (final configuration in [
+        (size: const Size(320, 180), tiers: 1, books: 4),
+        (size: const Size(360, 320), tiers: 2, books: 5),
+        (size: const Size(320, 300), tiers: 3, books: 6),
+      ]) {
+        final metrics = BookshelfLayoutMetrics(
+          size: configuration.size,
+          tierCount: configuration.tiers,
+          booksPerTier: configuration.books,
+        );
+
+        for (var tierIndex = 0; tierIndex < configuration.tiers; tierIndex++) {
+          final plank = metrics.shelfPlankRect(tierIndex);
+          for (
+            var slotIndex = 0;
+            slotIndex < configuration.books;
+            slotIndex++
+          ) {
+            final book = metrics.bookRectFor(
+              BookPosition(tierIndex: tierIndex, slotIndex: slotIndex),
+            );
+            expect((book.bottom - plank.top).abs(), lessThanOrEqualTo(0.001));
+          }
+        }
+      }
+    });
   });
 }
 

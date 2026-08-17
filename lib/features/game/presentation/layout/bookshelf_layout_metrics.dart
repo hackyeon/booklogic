@@ -8,10 +8,12 @@ class BookshelfLayoutMetrics {
     required this.size,
     required this.tierCount,
     required this.booksPerTier,
-    this.horizontalPadding = 12,
-    this.tierLabelWidth = 42,
-    this.tierGap = 12,
+    this.horizontalPadding = 8,
+    this.tierLabelWidth = 44,
+    this.tierGap = AppDimensions.shelfTierGap,
     this.shelfPlankHeight = AppDimensions.bookshelfShelfHeight,
+    this.shelfHorizontalExtension = AppDimensions.shelfHorizontalExtension,
+    this.bookShelfGap = 0,
   }) {
     _validateLayout(tierCount: tierCount, booksPerTier: booksPerTier);
   }
@@ -23,17 +25,103 @@ class BookshelfLayoutMetrics {
   final double tierLabelWidth;
   final double tierGap;
   final double shelfPlankHeight;
+  final double shelfHorizontalExtension;
+  final double bookShelfGap;
+
+  static Size contentSizeFor({
+    required Size availableSize,
+    required int tierCount,
+    required int booksPerTier,
+  }) {
+    _validateLayout(tierCount: tierCount, booksPerTier: booksPerTier);
+    final availableWidth = availableSize.width.isFinite
+        ? _nonNegative(availableSize.width)
+        : AppDimensions.bookshelfMaxWidth;
+    final width = preferredWidthFor(
+      booksPerTier: booksPerTier,
+      availableWidth: availableWidth,
+    );
+    final bookWidth = _baseBookWidthFor(
+      width: width,
+      booksPerTier: booksPerTier,
+    );
+    final bookHeight = bookWidth / AppDimensions.bookAspectRatio;
+    final tierHeight =
+        AppDimensions.shelfLabelHeight +
+        AppDimensions.shelfLabelGap +
+        bookHeight +
+        AppDimensions.bookshelfShelfHeight;
+    final desiredHeight =
+        tierHeight * tierCount + AppDimensions.shelfTierGap * (tierCount - 1);
+    final height = availableSize.height.isFinite
+        ? _clampDouble(desiredHeight, 0, availableSize.height)
+        : desiredHeight;
+    return Size(width, height);
+  }
+
+  static double preferredWidthFor({
+    required int booksPerTier,
+    required double availableWidth,
+  }) {
+    _validateLayout(tierCount: 1, booksPerTier: booksPerTier);
+    final desiredWidth =
+        booksPerTier * AppDimensions.shelfPreferredSlotExtent +
+        (AppDimensions.shelfHorizontalExtension + 8) * 2;
+    return _clampDouble(
+      desiredWidth,
+      0,
+      availableWidth < AppDimensions.bookshelfMaxWidth
+          ? availableWidth
+          : AppDimensions.bookshelfMaxWidth,
+    );
+  }
 
   static double preferredHeightFor(int tierCount) {
     if (tierCount < 1 || tierCount > 3) {
       throw ArgumentError.value(tierCount, 'tierCount', '1부터 3 사이여야 합니다.');
     }
-    final tierExtent = _clampDouble(240 - (tierCount - 1) * 56, 128, 240);
-    return tierExtent * tierCount + 12 * (tierCount - 1);
+    final maxBookHeight =
+        AppDimensions.shelfMaxBookWidth / AppDimensions.bookAspectRatio;
+    final tierExtent =
+        AppDimensions.shelfLabelHeight +
+        AppDimensions.shelfLabelGap +
+        maxBookHeight +
+        AppDimensions.bookshelfShelfHeight;
+    return tierExtent * tierCount +
+        AppDimensions.shelfTierGap * (tierCount - 1);
   }
 
+  Rect get availableRect => Offset.zero & size;
+
+  Rect get actualShelfRect => Rect.fromLTWH(
+    0,
+    0,
+    size.width,
+    tierExtent * tierCount + effectiveTierGap * (tierCount - 1),
+  );
+
+  double get verticalScale {
+    final desiredHeight = _desiredContentHeight;
+    if (desiredHeight <= 0 || size.height >= desiredHeight) {
+      return 1;
+    }
+    return _clampDouble(size.height / desiredHeight, 0, 1);
+  }
+
+  double get effectiveTierGap => tierGap * verticalScale;
+
+  double get effectiveShelfPlankHeight => shelfPlankHeight * verticalScale;
+
+  double get effectiveTierLabelHeight =>
+      AppDimensions.shelfLabelHeight * verticalScale;
+
+  double get effectiveTierLabelGap =>
+      AppDimensions.shelfLabelGap * verticalScale;
+
   double get contentWidth {
-    return _nonNegative(size.width - horizontalPadding * 2 - tierLabelWidth);
+    return _nonNegative(
+      size.width - horizontalPadding * 2 - shelfHorizontalExtension * 2,
+    );
   }
 
   double get slotExtent {
@@ -44,34 +132,30 @@ class BookshelfLayoutMetrics {
   }
 
   double get tierExtent {
-    if (tierCount == 0) {
-      return 0;
-    }
-    return _nonNegative(size.height - tierGap * (tierCount - 1)) / tierCount;
+    return effectiveTierLabelHeight +
+        effectiveTierLabelGap +
+        bookHeight +
+        effectiveShelfPlankHeight;
   }
 
   double get bookWidth {
-    final maxAllowedWidth = _nonNegative(slotExtent - 4);
-    final maxWidth = maxAllowedWidth < 72 ? maxAllowedWidth : 72.0;
-    return _clampDouble(slotExtent * 0.72, 0, maxWidth);
+    return _baseBookWidth * verticalScale;
   }
 
   double get bookHeight {
-    final maxAllowedHeight = _nonNegative(tierExtent - shelfPlankHeight - 14);
-    final aspectHeight = bookWidth / AppDimensions.bookAspectRatio;
-    final tierHeight = tierExtent * 0.68;
-    final desiredHeight = aspectHeight < tierHeight ? aspectHeight : tierHeight;
-    final maxHeight = maxAllowedHeight < 150 ? maxAllowedHeight : 150.0;
-    return _clampDouble(desiredHeight, 0, maxHeight);
+    return bookWidth / AppDimensions.bookAspectRatio;
   }
 
   Rect bookRectFor(BookPosition position) {
     _validatePosition(position);
-    final tierTop = position.tierIndex * (tierExtent + tierGap);
+    final tierTop = position.tierIndex * (tierExtent + effectiveTierGap);
     final slotLeft =
-        horizontalPadding + tierLabelWidth + position.slotIndex * slotExtent;
+        horizontalPadding +
+        shelfHorizontalExtension +
+        position.slotIndex * slotExtent;
     final left = slotLeft + (slotExtent - bookWidth) / 2;
-    final top = tierTop + (tierExtent - shelfPlankHeight - bookHeight) / 2;
+    final plankTop = tierTop + tierExtent - effectiveShelfPlankHeight;
+    final top = plankTop - bookShelfGap - bookHeight;
     return Rect.fromLTWH(left, top, bookWidth, bookHeight);
   }
 
@@ -81,7 +165,7 @@ class BookshelfLayoutMetrics {
     }
     return Rect.fromLTWH(
       horizontalPadding,
-      tierIndex * (tierExtent + tierGap),
+      tierIndex * (tierExtent + effectiveTierGap),
       _nonNegative(size.width - horizontalPadding * 2),
       tierExtent,
     );
@@ -89,17 +173,39 @@ class BookshelfLayoutMetrics {
 
   Rect tierLabelRect(int tierIndex) {
     final tier = tierRect(tierIndex);
-    return Rect.fromLTWH(tier.left, tier.top, tierLabelWidth, tier.height);
+    return Rect.fromLTWH(
+      tier.left + shelfHorizontalExtension,
+      tier.top,
+      tierLabelWidth,
+      effectiveTierLabelHeight,
+    );
   }
 
   Rect shelfPlankRect(int tierIndex) {
     final tier = tierRect(tierIndex);
     return Rect.fromLTWH(
-      horizontalPadding + tierLabelWidth,
-      tier.bottom - shelfPlankHeight,
-      contentWidth,
-      shelfPlankHeight,
+      horizontalPadding,
+      tier.bottom - effectiveShelfPlankHeight,
+      _nonNegative(size.width - horizontalPadding * 2),
+      effectiveShelfPlankHeight,
     );
+  }
+
+  double get _baseBookWidth => _baseBookWidthFor(
+    width: size.width,
+    booksPerTier: booksPerTier,
+    horizontalPadding: horizontalPadding,
+    shelfHorizontalExtension: shelfHorizontalExtension,
+  );
+
+  double get _desiredContentHeight {
+    final baseBookHeight = _baseBookWidth / AppDimensions.bookAspectRatio;
+    final baseTierHeight =
+        AppDimensions.shelfLabelHeight +
+        AppDimensions.shelfLabelGap +
+        baseBookHeight +
+        shelfPlankHeight;
+    return baseTierHeight * tierCount + tierGap * (tierCount - 1);
   }
 
   void _validatePosition(BookPosition position) {
@@ -130,6 +236,19 @@ class BookshelfLayoutMetrics {
         '1부터 6 사이여야 합니다.',
       );
     }
+  }
+
+  static double _baseBookWidthFor({
+    required double width,
+    required int booksPerTier,
+    double horizontalPadding = 8,
+    double shelfHorizontalExtension = AppDimensions.shelfHorizontalExtension,
+  }) {
+    final rowWidth = _nonNegative(
+      width - horizontalPadding * 2 - shelfHorizontalExtension * 2,
+    );
+    final slotWidth = rowWidth / booksPerTier;
+    return _clampDouble(slotWidth * 0.72, 0, AppDimensions.shelfMaxBookWidth);
   }
 
   static double _clampDouble(double value, double min, double max) {

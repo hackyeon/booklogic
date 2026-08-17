@@ -130,9 +130,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const SizedBox(height: AppDimensions.mediumSpacing),
               OutlinedButton(
+                key: const Key('home_settings_button'),
                 onPressed: () =>
                     Navigator.of(context).pushNamed(AppRoutes.settings),
-                child: const Text(AppStrings.settingsButton),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.settings_rounded),
+                    SizedBox(width: AppDimensions.smallSpacing),
+                    Text(AppStrings.settingsButton),
+                  ],
+                ),
               ),
             ],
           ),
@@ -174,11 +182,13 @@ class _BookshelfPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      key: const Key('home_bookshelf_illustration'),
       height: AppDimensions.shelfHeight,
       padding: const EdgeInsets.all(AppDimensions.mediumSpacing),
       decoration: BoxDecoration(
-        color: AppColors.bookshelfBrown,
+        color: AppColors.surfaceVariant,
         borderRadius: BorderRadius.circular(AppDimensions.cardRadius),
+        border: Border.all(color: AppColors.divider),
       ),
       child: Column(
         children: const [
@@ -202,12 +212,12 @@ class _ShelfRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = [
-      AppColors.primary,
-      AppColors.secondary,
-      AppColors.surface,
-      AppColors.textSecondary,
-      AppColors.divider,
+    const colors = [
+      AppColors.bookBlue,
+      AppColors.bookRed,
+      AppColors.bookYellow,
+      AppColors.bookGreen,
+      AppColors.bookPurple,
     ];
     final orderedColors = reverse ? colors.reversed.toList() : colors;
 
@@ -215,16 +225,29 @@ class _ShelfRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        for (final color in orderedColors)
+        for (var index = 0; index < orderedColors.length; index++)
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.smallSpacing / 2,
             ),
-            child: Container(
-              width: AppDimensions.shelfBookWidth,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
+            child: FractionallySizedBox(
+              heightFactor: index.isEven ? 0.9 : 1,
+              child: Container(
+                width: AppDimensions.shelfBookWidth,
+                decoration: BoxDecoration(
+                  color: orderedColors[index],
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(AppDimensions.smallSpacing),
+                    bottom: Radius.circular(4),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.bookShadow,
+                      blurRadius: 4,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -238,11 +261,50 @@ class _ShelfBoard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: AppDimensions.smallSpacing,
-      decoration: BoxDecoration(
-        color: AppColors.shelfDark,
-        borderRadius: BorderRadius.circular(AppDimensions.smallSpacing),
+    return SizedBox(
+      height: 12,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.shelf,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: const [
+                  BoxShadow(
+                    color: AppColors.shelfShadow,
+                    blurRadius: 5,
+                    offset: Offset(0, 3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Positioned(
+            left: 4,
+            top: 1,
+            right: 4,
+            height: 2,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.shelfHighlight,
+                borderRadius: BorderRadius.all(Radius.circular(2)),
+              ),
+            ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 4,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.shelfEdge,
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(6)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

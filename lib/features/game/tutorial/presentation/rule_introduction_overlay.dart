@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_dimensions.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../domain/rule_introduction.dart';
 
 class RuleIntroductionOverlay extends StatelessWidget {
@@ -23,7 +24,7 @@ class RuleIntroductionOverlay extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: () {},
         child: ColoredBox(
-          color: Colors.black.withValues(alpha: 0.42),
+          color: AppColors.ruleScrim,
           child: SafeArea(
             child: Center(
               child: ConstrainedBox(
