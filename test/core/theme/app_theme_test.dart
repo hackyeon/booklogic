@@ -31,4 +31,20 @@ void main() {
     expect(style.systemNavigationBarContrastEnforced, isFalse);
     expect(theme.appBarTheme.systemOverlayStyle, style);
   });
+
+  test('tutorial system UI follows the full-screen dim layer', () {
+    final style = AppTheme.tutorialSystemUiOverlayStyle;
+
+    expect(style.statusBarColor, Colors.transparent);
+    expect(style.statusBarIconBrightness, Brightness.light);
+    expect(
+      style.systemNavigationBarColor,
+      Color.alphaBlend(AppColors.tutorialScrim, AppColors.background),
+    );
+    expect(
+      style.systemNavigationBarDividerColor,
+      Color.alphaBlend(AppColors.tutorialScrim, AppColors.divider),
+    );
+    expect(style.systemNavigationBarIconBrightness, Brightness.light);
+  });
 }

@@ -19,6 +19,7 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
     this.onTargetTap,
     this.blockBackgroundInteraction = true,
     this.ignorePointers = false,
+    this.useRootSafeInsets = false,
     super.key,
   });
 
@@ -31,6 +32,7 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
   final VoidCallback? onTargetTap;
   final bool blockBackgroundInteraction;
   final bool ignorePointers;
+  final bool useRootSafeInsets;
 
   @override
   State<TutorialCoachMarkOverlay> createState() =>
@@ -62,6 +64,9 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
   @override
   Widget build(BuildContext context) {
     final targetRect = _paddedTargetRect(context);
+    final safeInsets = widget.useRootSafeInsets
+        ? MediaQuery.viewPaddingOf(context)
+        : EdgeInsets.zero;
     const color = AppColors.tutorialScrim;
 
     final overlay = LayoutBuilder(
@@ -84,6 +89,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
                 rect: targetRect,
                 child: IgnorePointer(
                   child: DecoratedBox(
+                    key: const Key('tutorial_target_cutout'),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
@@ -107,6 +113,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
               child: CustomSingleChildLayout(
                 delegate: _TutorialMessageLayoutDelegate(
                   targetRect: targetRect,
+                  safeInsets: safeInsets,
                 ),
                 child: IgnorePointer(
                   ignoring:
@@ -132,7 +139,10 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
       },
     );
     return Positioned.fill(
-      child: widget.ignorePointers ? IgnorePointer(child: overlay) : overlay,
+      child: SizedBox.expand(
+        key: const Key('tutorial_overlay_bounds'),
+        child: widget.ignorePointers ? IgnorePointer(child: overlay) : overlay,
+      ),
     );
   }
 
@@ -272,19 +282,27 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
 }
 
 class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
-  const _TutorialMessageLayoutDelegate({required this.targetRect});
+  const _TutorialMessageLayoutDelegate({
+    required this.targetRect,
+    required this.safeInsets,
+  });
 
   final Rect? targetRect;
+  final EdgeInsets safeInsets;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
     final availableWidth = math.max(
       0.0,
-      constraints.maxWidth - AppDimensions.screenPadding * 2,
+      constraints.maxWidth -
+          safeInsets.horizontal -
+          AppDimensions.screenPadding * 2,
     );
     final availableHeight = math.max(
       0.0,
-      constraints.maxHeight - AppDimensions.screenPadding * 2,
+      constraints.maxHeight -
+          safeInsets.vertical -
+          AppDimensions.screenPadding * 2,
     );
     return BoxConstraints(
       maxWidth: math.min(380, availableWidth),
@@ -294,19 +312,22 @@ class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
-    const edgePadding = AppDimensions.screenPadding;
+    final leftEdge = safeInsets.left + AppDimensions.screenPadding;
+    final rightEdge = safeInsets.right + AppDimensions.screenPadding;
+    final topEdge = safeInsets.top + AppDimensions.screenPadding;
+    final bottomEdge = safeInsets.bottom + AppDimensions.screenPadding;
     final horizontalLimit = math.max(
-      edgePadding,
-      size.width - childSize.width - edgePadding,
+      leftEdge,
+      size.width - childSize.width - rightEdge,
     );
     final desiredLeft = targetRect == null
         ? (size.width - childSize.width) / 2
         : targetRect!.center.dx - childSize.width / 2;
-    final left = desiredLeft.clamp(edgePadding, horizontalLimit);
+    final left = desiredLeft.clamp(leftEdge, horizontalLimit);
 
     final verticalLimit = math.max(
-      edgePadding,
-      size.height - childSize.height - edgePadding,
+      topEdge,
+      size.height - childSize.height - bottomEdge,
     );
     if (targetRect == null) {
       return Offset(left, verticalLimit);
@@ -314,16 +335,17 @@ class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
 
     final belowTop = targetRect!.bottom + AppDimensions.mediumSpacing;
     final hasRoomBelow =
-        belowTop + childSize.height + edgePadding <= size.height;
+        belowTop + childSize.height + bottomEdge <= size.height;
     final desiredTop = hasRoomBelow
         ? belowTop
         : targetRect!.top - childSize.height - AppDimensions.mediumSpacing;
-    return Offset(left, desiredTop.clamp(edgePadding, verticalLimit));
+    return Offset(left, desiredTop.clamp(topEdge, verticalLimit));
   }
 
   @override
   bool shouldRelayout(covariant _TutorialMessageLayoutDelegate oldDelegate) {
-    return oldDelegate.targetRect != targetRect;
+    return oldDelegate.targetRect != targetRect ||
+        oldDelegate.safeInsets != safeInsets;
   }
 }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../app/app_routes.dart';
 import '../../../core/ads/application/ad_session_coordinator.dart';
@@ -14,6 +15,7 @@ import '../../../core/feedback/haptic/game_haptic_player.dart';
 import '../../../core/feedback/sound/game_sound_player.dart';
 import '../../../core/progress/game_progress_controller.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../application/game_controller.dart';
 import '../application/game_status.dart';
 import '../domain/book.dart';
@@ -414,8 +416,11 @@ class _GameScreenState extends State<GameScreen> {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  Scaffold _buildGame(BuildContext context, GameController controller) {
-    return Scaffold(
+  Widget _buildGame(BuildContext context, GameController controller) {
+    final shouldShowTutorialOverlay = _shouldShowMainTutorialOverlay(
+      controller,
+    );
+    final gameScaffold = Scaffold(
       body: SafeArea(
         child: Column(
           children: [
@@ -504,28 +509,44 @@ class _GameScreenState extends State<GameScreen> {
                       introduction: _currentRuleIntroduction!,
                       onAcknowledge: _acknowledgeCurrentRuleIntroduction,
                     ),
-                  if (_shouldShowMainTutorialOverlay(controller))
-                    TutorialCoachMarkOverlay(
-                      registry: _tutorialTargetRegistry,
-                      step: _tutorialController.currentStep!,
-                      stepIndex: _tutorialController.currentStepIndex,
-                      totalStepCount: _tutorialController.plan!.steps.length,
-                      onAcknowledge: _tutorialController.acknowledgeCurrentStep,
-                      onSkipConfirmed: _skipTutorial,
-                      onTargetTap:
-                          _tutorialController.currentStep?.type ==
-                              TutorialStepType.tapClueSummary
-                          ? () => unawaited(_openClueBottomSheet())
-                          : null,
-                      blockBackgroundInteraction:
-                          _tutorialController.currentStep?.type !=
-                          TutorialStepType.tapClueSummary,
-                    ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      key: const Key('game_system_ui_style'),
+      value: shouldShowTutorialOverlay
+          ? AppTheme.tutorialSystemUiOverlayStyle
+          : AppTheme.systemUiOverlayStyle,
+      child: Stack(
+        key: const Key('game_screen_route_stack'),
+        fit: StackFit.expand,
+        children: [
+          gameScaffold,
+          if (shouldShowTutorialOverlay)
+            TutorialCoachMarkOverlay(
+              key: const Key('game_tutorial_route_overlay'),
+              registry: _tutorialTargetRegistry,
+              step: _tutorialController.currentStep!,
+              stepIndex: _tutorialController.currentStepIndex,
+              totalStepCount: _tutorialController.plan!.steps.length,
+              onAcknowledge: _tutorialController.acknowledgeCurrentStep,
+              onSkipConfirmed: _skipTutorial,
+              onTargetTap:
+                  _tutorialController.currentStep?.type ==
+                      TutorialStepType.tapClueSummary
+                  ? () => unawaited(_openClueBottomSheet())
+                  : null,
+              blockBackgroundInteraction:
+                  _tutorialController.currentStep?.type !=
+                  TutorialStepType.tapClueSummary,
+              useRootSafeInsets: true,
+            ),
+        ],
       ),
     );
   }

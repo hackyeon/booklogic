@@ -261,6 +261,9 @@ void main() {
 
     expect(find.byKey(const Key('clue_bottom_sheet')), findsOneWidget);
     expect(find.text('단서 카드를 눌러 관련 책을 확인해 보세요.'), findsOneWidget);
+    expect(find.byKey(const Key('game_tutorial_route_overlay')), findsNothing);
+    expect(find.byKey(const Key('tutorial_overlay_bounds')), findsOneWidget);
+    expect(find.byKey(const Key('tutorial_target_cutout')), findsOneWidget);
 
     await tester.tap(find.byKey(Key('clue_$wrongClueId')), warnIfMissed: false);
     await tester.pump();
