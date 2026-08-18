@@ -30,6 +30,19 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.light,
   );
 
+  static final clearResultSystemUiOverlayStyle = systemUiOverlayStyle.copyWith(
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color.alphaBlend(
+      AppColors.overlayScrim,
+      AppColors.background,
+    ),
+    systemNavigationBarDividerColor: Color.alphaBlend(
+      AppColors.overlayScrim,
+      AppColors.divider,
+    ),
+    systemNavigationBarIconBrightness: Brightness.light,
+  );
+
   static ThemeData light() {
     final colorScheme =
         ColorScheme.fromSeed(

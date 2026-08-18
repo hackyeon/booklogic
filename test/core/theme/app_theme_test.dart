@@ -47,4 +47,20 @@ void main() {
     );
     expect(style.systemNavigationBarIconBrightness, Brightness.light);
   });
+
+  test('clear result system UI follows the full-screen dim layer', () {
+    final style = AppTheme.clearResultSystemUiOverlayStyle;
+
+    expect(style.statusBarColor, Colors.transparent);
+    expect(style.statusBarIconBrightness, Brightness.light);
+    expect(
+      style.systemNavigationBarColor,
+      Color.alphaBlend(AppColors.overlayScrim, AppColors.background),
+    );
+    expect(
+      style.systemNavigationBarDividerColor,
+      Color.alphaBlend(AppColors.overlayScrim, AppColors.divider),
+    );
+    expect(style.systemNavigationBarIconBrightness, Brightness.light);
+  });
 }

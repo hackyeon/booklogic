@@ -389,20 +389,6 @@ class _GameScreenState extends State<GameScreen> {
     });
   }
 
-  void _retryCurrentLevel() {
-    if (_isPreparingNextLevel) {
-      return;
-    }
-    if (_nextLevelErrorMessage != null) {
-      setState(() {
-        _nextLevelErrorMessage = null;
-        _isProgressSaveError = false;
-      });
-    }
-    _controller?.restart();
-    _configureStageGuides();
-  }
-
   void _restartCurrentLevel() {
     final controller = _controller;
     if (controller == null || controller.status != GameStatus.idle) {
@@ -493,17 +479,6 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                     ),
                   ),
-                  if (controller.isCleared)
-                    ClearResultOverlay(
-                      level: controller.level,
-                      moveCount: controller.moveCount,
-                      isPreparingNextLevel: _isPreparingNextLevel,
-                      nextLevelErrorMessage: _nextLevelErrorMessage,
-                      isProgressSaveError: _isProgressSaveError,
-                      onRetry: _retryCurrentLevel,
-                      onHome: () => _goHome(context),
-                      onNextLevel: _prepareNextLevel,
-                    ),
                   if (!controller.isCleared && _currentRuleIntroduction != null)
                     RuleIntroductionOverlay(
                       introduction: _currentRuleIntroduction!,
@@ -519,7 +494,9 @@ class _GameScreenState extends State<GameScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       key: const Key('game_system_ui_style'),
-      value: shouldShowTutorialOverlay
+      value: controller.isCleared
+          ? AppTheme.clearResultSystemUiOverlayStyle
+          : shouldShowTutorialOverlay
           ? AppTheme.tutorialSystemUiOverlayStyle
           : AppTheme.systemUiOverlayStyle,
       child: Stack(
@@ -545,6 +522,17 @@ class _GameScreenState extends State<GameScreen> {
                   _tutorialController.currentStep?.type !=
                   TutorialStepType.tapClueSummary,
               useRootSafeInsets: true,
+            ),
+          if (controller.isCleared)
+            ClearResultOverlay(
+              key: const Key('game_clear_result_route_overlay'),
+              level: controller.level,
+              moveCount: controller.moveCount,
+              isPreparingNextLevel: _isPreparingNextLevel,
+              nextLevelErrorMessage: _nextLevelErrorMessage,
+              isProgressSaveError: _isProgressSaveError,
+              onHome: () => _goHome(context),
+              onNextLevel: _prepareNextLevel,
             ),
         ],
       ),

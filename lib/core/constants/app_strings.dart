@@ -31,7 +31,6 @@ class AppStrings {
   static const restartNextStepMessage = '재시작 기능은 후속 단계에서 구현됩니다.';
   static const clearResultTitle = '책장 정리 완료!';
   static const homeButton = '홈으로';
-  static const retryButton = '다시하기';
   static const generationRetryButton = '다시 시도';
   static const nextLevelButton = '다음 레벨';
   static const preparingNextLevelButton = '준비 중...';

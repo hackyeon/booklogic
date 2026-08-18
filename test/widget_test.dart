@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:booklogic/app/app.dart';
+import 'package:booklogic/app/app_routes.dart';
 import 'package:booklogic/core/ads/application/ad_session_coordinator.dart';
 import 'package:booklogic/core/ads/config/ad_runtime_config.dart';
 import 'package:booklogic/core/ads/interstitial/next_level_ad_gate.dart';
@@ -17,6 +19,8 @@ import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_controller.dart';
 import 'package:booklogic/core/progress/game_progress_store.dart';
 import 'package:booklogic/core/progress/shared_preferences_game_progress_store.dart';
+import 'package:booklogic/core/theme/app_colors.dart';
+import 'package:booklogic/core/theme/app_theme.dart';
 import 'package:booklogic/features/game/application/game_controller.dart';
 import 'package:booklogic/features/game/application/game_status.dart';
 import 'package:booklogic/features/game/domain/book.dart';
@@ -1327,7 +1331,6 @@ void main() {
   ) async {
     var homeCount = 0;
     var nextCount = 0;
-    var retryCount = 0;
     var behindTapCount = 0;
 
     await tester.pumpWidget(
@@ -1345,7 +1348,6 @@ void main() {
               ClearResultOverlay(
                 level: 1,
                 moveCount: 2,
-                onRetry: () => retryCount += 1,
                 onHome: () => homeCount += 1,
                 onNextLevel: () => nextCount += 1,
               ),
@@ -1356,15 +1358,22 @@ void main() {
     );
 
     expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.byKey(const Key('clear_result_barrier')), findsOneWidget);
     expect(find.byKey(const Key('clear_result_card')), findsOneWidget);
     expect(find.byKey(const Key('clear_result_title')), findsOneWidget);
     expect(find.text(AppStrings.clearResultTitle), findsOneWidget);
     expect(find.text('Level 1'), findsOneWidget);
     expect(find.text('${AppStrings.moveCountPrefix} 2회'), findsOneWidget);
-    expect(find.byKey(const Key('clear_retry_button')), findsOneWidget);
-    expect(find.text(AppStrings.retryButton), findsOneWidget);
+    expect(find.byKey(const Key('clear_retry_button')), findsNothing);
+    expect(find.text('다시하기'), findsNothing);
     expect(find.text(AppStrings.homeButton), findsOneWidget);
     expect(find.text(AppStrings.nextLevelButton), findsOneWidget);
+
+    final barrier = tester.widget<ModalBarrier>(
+      find.byKey(const Key('clear_result_barrier')),
+    );
+    expect(barrier.color, AppColors.overlayScrim);
+    expect(barrier.dismissible, isFalse);
 
     await tester.tap(
       find.byKey(const Key('behind_button')),
@@ -1375,19 +1384,11 @@ void main() {
     await tester.tap(find.byKey(const Key('clear_next_level_button')));
     await tester.pump();
     expect(nextCount, 1);
-    expect(retryCount, 0);
-    expect(homeCount, 0);
-
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pump();
-    expect(nextCount, 1);
-    expect(retryCount, 1);
     expect(homeCount, 0);
 
     await tester.tap(find.byKey(const Key('clear_home_button')));
     await tester.pump();
     expect(nextCount, 1);
-    expect(retryCount, 1);
     expect(homeCount, 1);
   });
 
@@ -1406,7 +1407,6 @@ void main() {
                 level: 1,
                 moveCount: 2,
                 nextLevelErrorMessage: AppStrings.nextLevelPreparationError,
-                onRetry: () {},
                 onHome: () {},
                 onNextLevel: () {},
               ),
@@ -1420,20 +1420,64 @@ void main() {
     expect(find.byKey(const Key('clear_result_card')), findsOneWidget);
     expect(find.byKey(const Key('clear_next_level_button')), findsOneWidget);
     expect(find.byKey(const Key('clear_next_level_error')), findsOneWidget);
-    expect(find.byKey(const Key('clear_retry_button')), findsOneWidget);
+    expect(find.byKey(const Key('clear_retry_button')), findsNothing);
     expect(find.byKey(const Key('clear_home_button')), findsOneWidget);
     expect(find.text(AppStrings.nextLevelPreparationError), findsOneWidget);
     expect(find.text(AppStrings.nextLevelButton), findsOneWidget);
-    expect(find.text(AppStrings.retryButton), findsOneWidget);
+    expect(find.text('다시하기'), findsNothing);
     expect(find.text(AppStrings.homeButton), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('clear result overlay supports large text without overflow', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    for (final scale in [1.0, 1.3, 2.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: MediaQueryData(
+              size: const Size(320, 568),
+              textScaler: TextScaler.linear(scale),
+            ),
+            child: Scaffold(
+              body: Stack(
+                children: [
+                  ClearResultOverlay(
+                    level: 100,
+                    moveCount: 123,
+                    onHome: () {},
+                    onNextLevel: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.clearResultTitle), findsOneWidget);
+      expect(find.text('Level 100'), findsOneWidget);
+      expect(find.text('${AppStrings.moveCountPrefix} 123회'), findsOneWidget);
+      expect(find.byKey(const Key('clear_next_level_button')), findsOneWidget);
+      expect(find.byKey(const Key('clear_home_button')), findsOneWidget);
+      expect(find.byKey(const Key('clear_retry_button')), findsNothing);
+      await tester.ensureVisible(find.byKey(const Key('clear_home_button')));
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets(
     'clear result overlay disables actions while preparing next level',
     (tester) async {
       var nextCount = 0;
-      var retryCount = 0;
       var homeCount = 0;
 
       await tester.pumpWidget(
@@ -1445,7 +1489,6 @@ void main() {
                   level: 1,
                   moveCount: 2,
                   isPreparingNextLevel: true,
-                  onRetry: () => retryCount += 1,
                   onHome: () => homeCount += 1,
                   onNextLevel: () => nextCount += 1,
                 ),
@@ -1474,17 +1517,12 @@ void main() {
         warnIfMissed: false,
       );
       await tester.tap(
-        find.byKey(const Key('clear_retry_button')),
-        warnIfMissed: false,
-      );
-      await tester.tap(
         find.byKey(const Key('clear_home_button')),
         warnIfMissed: false,
       );
       await tester.pump();
 
       expect(nextCount, 0);
-      expect(retryCount, 0);
       expect(homeCount, 0);
     },
   );
@@ -1493,7 +1531,6 @@ void main() {
     tester,
   ) async {
     var nextCount = 0;
-    var retryCount = 0;
     var homeCount = 0;
 
     await tester.pumpWidget(
@@ -1505,7 +1542,6 @@ void main() {
                 level: 1,
                 moveCount: 2,
                 nextLevelErrorMessage: AppStrings.nextLevelPreparationError,
-                onRetry: () => retryCount += 1,
                 onHome: () => homeCount += 1,
                 onNextLevel: () => nextCount += 1,
               ),
@@ -1526,12 +1562,10 @@ void main() {
     expect(find.textContaining('generatorVersion'), findsNothing);
 
     await tester.tap(find.byKey(const Key('clear_next_level_button')));
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
     await tester.tap(find.byKey(const Key('clear_home_button')));
     await tester.pump();
 
     expect(nextCount, 1);
-    expect(retryCount, 1);
     expect(homeCount, 1);
   });
 
@@ -1551,7 +1585,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('small game screen supports restart and clear retry', (
+  testWidgets('small game screen supports restart and clear result actions', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(320, 568);
@@ -1571,11 +1605,12 @@ void main() {
     expect(find.text('${AppStrings.moveCountPrefix} 0회'), findsOneWidget);
 
     await _clearGeneratedLevel1Game(tester);
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
-    expect(_visibleBookOrder(tester), _generatedLevel1BookIds);
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.byKey(const Key('clear_next_level_button')), findsOneWidget);
+    expect(find.byKey(const Key('clear_home_button')), findsOneWidget);
+    expect(find.byKey(const Key('clear_retry_button')), findsNothing);
+    expect(find.text('다시하기'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -2859,9 +2894,9 @@ void main() {
     expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
     expect(find.byKey(const Key('clear_result_card')), findsOneWidget);
     expect(find.byKey(const Key('clear_result_title')), findsOneWidget);
-    expect(find.byKey(const Key('clear_retry_button')), findsOneWidget);
+    expect(find.byKey(const Key('clear_retry_button')), findsNothing);
     expect(find.text(AppStrings.clearResultTitle), findsOneWidget);
-    expect(find.text(AppStrings.retryButton), findsOneWidget);
+    expect(find.text('다시하기'), findsNothing);
     expect(find.text('Level 1'), findsWidgets);
     expect(find.text(_targetMoveCountTitle(1)), findsWidgets);
     expect(find.text(_clearedClueTitle(1)), findsOneWidget);
@@ -2900,6 +2935,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
+    expect(
+      tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byKey(const Key('game_system_ui_style')),
+          )
+          .value,
+      AppTheme.systemUiOverlayStyle,
+    );
     expect(find.text('Level 2'), findsOneWidget);
     expect(
       _visibleBookOrder(tester, _generatedLevel2BookIds),
@@ -2925,63 +2968,104 @@ void main() {
     expect(find.text(AppStrings.appTitle), findsOneWidget);
   });
 
-  testWidgets('clear retry restarts level and allows clearing again', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
+  testWidgets(
+    'clear result route overlay covers chrome and blocks background input',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.tap(find.byKey(const Key('home_continue_button')));
-    await tester.pumpAndSettle();
-    await _clearGeneratedLevel1Game(tester);
+      await tester.pumpWidget(
+        MaterialApp(
+          routes: {
+            AppRoutes.game: (_) => MediaQuery(
+              data: const MediaQueryData(
+                size: Size(390, 844),
+                padding: EdgeInsets.only(top: 24, bottom: 34),
+                viewPadding: EdgeInsets.only(top: 24, bottom: 34),
+              ),
+              child: _gameScreen(),
+            ),
+            AppRoutes.settings: (_) =>
+                const Scaffold(body: Center(child: Text('settings opened'))),
+          },
+          home: const Scaffold(body: Center(child: Text('test home'))),
+        ),
+      );
+      Navigator.of(
+        tester.element(find.text('test home')),
+      ).pushNamed(AppRoutes.game);
+      await tester.pumpAndSettle();
+      await _clearGeneratedLevel1Game(tester);
 
-    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+      final routeStackFinder = find.byKey(const Key('game_screen_route_stack'));
+      final routeOverlayFinder = find.byKey(
+        const Key('game_clear_result_route_overlay'),
+      );
+      final overlayFinder = find.byKey(const Key('clear_result_overlay'));
+      final barrierFinder = find.byKey(const Key('clear_result_barrier'));
+      final headerFinder = find.byKey(const Key('game_header'));
+      final statusBarFinder = find.byKey(const Key('game_status_bar'));
 
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pumpAndSettle();
+      expect(routeOverlayFinder, findsOneWidget);
+      expect(overlayFinder, findsOneWidget);
+      expect(barrierFinder, findsOneWidget);
+      expect(tester.getRect(overlayFinder), tester.getRect(routeStackFinder));
+      expect(tester.getRect(barrierFinder), tester.getRect(routeStackFinder));
+      expect(
+        tester.getRect(barrierFinder).contains(const Offset(12, 12)),
+        isTrue,
+      );
+      expect(
+        tester
+            .getRect(barrierFinder)
+            .contains(tester.getRect(headerFinder).center),
+        isTrue,
+      );
+      expect(
+        tester
+            .getRect(barrierFinder)
+            .contains(tester.getRect(statusBarFinder).center),
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+              find.byKey(const Key('game_system_ui_style')),
+            )
+            .value,
+        AppTheme.clearResultSystemUiOverlayStyle,
+      );
 
-    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
-    expect(find.byKey(const Key('bookshelf_clear_glow')), findsNothing);
-    expect(find.text(AppStrings.levelOne), findsOneWidget);
-    expect(find.text(AppStrings.selectFirstBook), findsOneWidget);
-    expect(find.text('${AppStrings.moveCountPrefix} 0회'), findsOneWidget);
-    expect(find.text(_initialClueTitle(1)), findsOneWidget);
-    expect(_visibleBookOrder(tester), _generatedLevel1BookIds);
-    _expectInitialGeneratedLevel1Checks();
-    for (final id in _generatedLevel1BookIds) {
-      expect(find.byKey(Key('book_$id')), findsOneWidget);
-    }
-    expect(
-      tester
-          .widget<IconButton>(find.byKey(const Key('game_restart_button')))
-          .onPressed,
-      isNotNull,
-    );
-    expect(
-      tester
-          .widget<IconButton>(
-            find.widgetWithIcon(IconButton, Icons.settings_rounded),
-          )
-          .onPressed,
-      isNotNull,
-    );
+      final routeStack = tester.widget<Stack>(routeStackFinder);
+      expect(routeStack.children.first, isA<Scaffold>());
+      expect(
+        routeStack.children.last.key,
+        const Key('game_clear_result_route_overlay'),
+      );
 
-    await tester.tap(find.byIcon(Icons.settings_rounded));
-    await tester.pumpAndSettle();
-    expect(find.text(AppStrings.sound), findsOneWidget);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+      for (final blockedControl in [
+        find.byKey(const Key('game_back_button')),
+        find.byKey(const Key('game_settings_button')),
+        find.byKey(const Key('game_restart_button')),
+        find.byKey(const Key('clue_summary_button')),
+      ]) {
+        await tester.tap(blockedControl, warnIfMissed: false);
+        await tester.pump();
+        expect(routeOverlayFinder, findsOneWidget);
+        expect(find.text('settings opened'), findsNothing);
+      }
 
-    await _clearGeneratedLevel1Game(tester);
+      await tester.tap(find.byKey(const Key('clear_home_button')));
+      await tester.pumpAndSettle();
+      expect(find.text('test home'), findsOneWidget);
+      expect(routeOverlayFinder, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
-    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
-    expect(find.text(_targetMoveCountTitle(1)), findsWidgets);
-  });
-
-  testWidgets('level 2 can be cleared, retried, and advanced to level 3', (
-    tester,
-  ) async {
+  testWidgets('level 2 can be cleared and advanced to level 3', (tester) async {
     final generator = _SpyStageGenerator();
     final store = FakeGameProgressStore(
       progress: GameProgress.initial(generatorVersion: 1),
@@ -3023,20 +3107,6 @@ void main() {
       _generatedLevel2TargetIds,
     );
 
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pumpAndSettle();
-
-    expect(generator.levels, [1, 2]);
-    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
-    expect(find.text('Level 2'), findsOneWidget);
-    expect(find.text(_initialClueTitle(2)), findsOneWidget);
-    expect(find.text('${AppStrings.moveCountPrefix} 0회'), findsOneWidget);
-    expect(
-      _visibleBookOrder(tester, _generatedLevel2BookIds),
-      _generatedLevel2BookIds,
-    );
-
-    await _clearGeneratedLevel2Game(tester);
     await tester.tap(find.byKey(const Key('clear_next_level_button')));
     await tester.pumpAndSettle();
 
@@ -3366,7 +3436,7 @@ void main() {
     progressController.dispose();
   });
 
-  testWidgets('back navigation is safe during clearing and after cleared', (
+  testWidgets('back is safe during clearing and blocked by clear result', (
     tester,
   ) async {
     await tester.pumpWidget(_app());
@@ -3389,9 +3459,17 @@ void main() {
     await tester.tap(find.byKey(const Key('home_continue_button')));
     await tester.pumpAndSettle();
     await _clearGeneratedLevel1Game(tester);
-    await tester.tap(find.byKey(const Key('game_back_button')));
-    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const Key('game_back_button')),
+      warnIfMissed: false,
+    );
+    await tester.pump();
 
+    expect(find.byKey(const Key('clear_result_overlay')), findsOneWidget);
+    expect(find.text(AppStrings.appTitle), findsNothing);
+
+    await tester.tap(find.byKey(const Key('clear_home_button')));
+    await tester.pumpAndSettle();
     expect(find.text(AppStrings.appTitle), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -3573,7 +3651,7 @@ void main() {
     _expectBookCentersStrictlyIncreasing(tester, _generatedLevel1BookIds);
   });
 
-  testWidgets('stage generator is called once across rebuilds and replay', (
+  testWidgets('stage generator is called once across rebuilds and restart', (
     tester,
   ) async {
     final generator = _SpyStageGenerator();
@@ -3603,13 +3681,6 @@ void main() {
     await tester.tap(find.byKey(const Key('game_restart_button')));
     await tester.pumpAndSettle();
     expect(generator.callCount, 1);
-
-    await _clearGeneratedLevel1Game(tester);
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pumpAndSettle();
-
-    expect(generator.callCount, 1);
-    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
     expect(_visibleBookOrder(tester), _generatedLevel1BookIds);
     expect(find.text(_initialClueTitle(1)), findsOneWidget);
   });
@@ -3650,35 +3721,6 @@ void main() {
       _visibleBookOrder(tester, _generatedLevel2BookIds),
       _generatedLevel2BookIds,
     );
-  });
-
-  testWidgets('clear retry after next level failure replays current level', (
-    tester,
-  ) async {
-    final generator = _SpyStageGenerator(
-      errors: [null, _generationException()],
-    );
-
-    await tester.pumpWidget(
-      MaterialApp(home: _gameScreen(stageGenerator: generator)),
-    );
-
-    await _clearGeneratedLevel1Game(tester);
-    await tester.tap(find.byKey(const Key('clear_next_level_button')));
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const Key('clear_next_level_error')), findsOneWidget);
-
-    await tester.tap(find.byKey(const Key('clear_retry_button')));
-    await tester.pumpAndSettle();
-
-    expect(generator.levels, [1, 2]);
-    expect(find.byKey(const Key('clear_result_overlay')), findsNothing);
-    expect(find.byKey(const Key('clear_next_level_error')), findsNothing);
-    expect(find.text(AppStrings.levelOne), findsOneWidget);
-    expect(find.text('${AppStrings.moveCountPrefix} 0회'), findsOneWidget);
-    expect(find.text(_initialClueTitle(1)), findsOneWidget);
-    expect(_visibleBookOrder(tester), _generatedLevel1BookIds);
   });
 
   testWidgets('wrong next stage level is rejected without switching game', (
