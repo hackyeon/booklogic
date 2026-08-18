@@ -56,7 +56,10 @@ class ClueBottomSheet extends StatelessWidget {
         SafeArea(
           top: false,
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
+            constraints: BoxConstraints(
+              minHeight: shouldShowTutorialOverlay ? maxHeight : 0,
+              maxHeight: maxHeight,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -144,8 +147,7 @@ class ClueBottomSheet extends StatelessWidget {
               }
               Navigator.of(context).pop(clueId);
             },
-            blockBackgroundInteraction: false,
-            ignorePointers: true,
+            blockBackgroundInteraction: true,
           ),
       ],
     );

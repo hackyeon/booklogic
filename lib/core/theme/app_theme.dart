@@ -43,6 +43,12 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.light,
   );
 
+  static final interstitialSystemUiOverlayStyle = systemUiOverlayStyle.copyWith(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemStatusBarContrastEnforced: false,
+  );
+
   static ThemeData light() {
     final colorScheme =
         ColorScheme.fromSeed(

@@ -518,9 +518,7 @@ class _GameScreenState extends State<GameScreen> {
                       TutorialStepType.tapClueSummary
                   ? () => unawaited(_openClueBottomSheet())
                   : null,
-              blockBackgroundInteraction:
-                  _tutorialController.currentStep?.type !=
-                  TutorialStepType.tapClueSummary,
+              blockBackgroundInteraction: true,
               useRootSafeInsets: true,
             ),
           if (controller.isCleared)
@@ -701,7 +699,9 @@ class _GameScreenState extends State<GameScreen> {
               tutorialStepIndex: _tutorialController.currentStepIndex,
               tutorialStepCount: _tutorialController.plan?.steps.length ?? 0,
               onTutorialAcknowledge: _tutorialController.acknowledgeCurrentStep,
-              onTutorialSkipConfirmed: _skipTutorial,
+              onTutorialSkipConfirmed: () {
+                _skipTutorialFromBottomSheet(bottomSheetContext);
+              },
               canSelectClue: (clueId) {
                 return _tutorialController.canTapClue(clueId, controller);
               },
@@ -866,6 +866,16 @@ class _GameScreenState extends State<GameScreen> {
       _ruleIntroductionQueue = const [];
       _ruleIntroductionIndex = 0;
     });
+  }
+
+  void _skipTutorialFromBottomSheet(BuildContext bottomSheetContext) {
+    if (bottomSheetContext.mounted) {
+      final bottomSheetRoute = ModalRoute.of(bottomSheetContext);
+      if (bottomSheetRoute?.isCurrent == true) {
+        Navigator.of(bottomSheetContext).pop();
+      }
+    }
+    _skipTutorial();
   }
 
   Scaffold _buildGenerationError(BuildContext context) {

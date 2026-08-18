@@ -270,14 +270,17 @@ void main() {
     expect(find.byKey(const Key('clue_bottom_sheet')), findsOneWidget);
     expect(find.text('교환 0회'), findsOneWidget);
 
-    await _closeClueSheet(tester);
+    await _dismissClueSheetWithBack(tester);
     expect(find.text('단서를 눌러 단서 목록을 확인해 보세요.'), findsOneWidget);
     await _openClueSheet(tester);
     expect(find.text('단서 카드를 눌러 관련 책을 확인해 보세요.'), findsOneWidget);
     final targetFinder = find.byKey(Key('clue_$targetClueId'));
     await tester.ensureVisible(targetFinder);
     await tester.pumpAndSettle();
-    await tester.tap(targetFinder);
+    await tester.tap(
+      find.byKey(const Key('tutorial_target_cutout')),
+      warnIfMissed: false,
+    );
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
     expect(
@@ -312,7 +315,10 @@ void main() {
 
     expect(find.text('단서를 눌러 첫 번째 단서를 확인해 보세요.'), findsOneWidget);
     await _openClueSheet(tester);
-    await tester.tap(find.byKey(Key('clue_${clueSteps.first.expectedClueId}')));
+    await tester.tap(
+      find.byKey(const Key('tutorial_target_cutout')),
+      warnIfMissed: false,
+    );
     await tester.pump(const Duration(milliseconds: 260));
     await tester.pump(AppDurations.clueBookHighlight);
     await tester.pump();
@@ -424,6 +430,11 @@ Future<void> _openClueSheet(WidgetTester tester) async {
 
 Future<void> _closeClueSheet(WidgetTester tester) async {
   await tester.tap(find.byKey(const Key('clue_bottom_sheet_close_button')));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _dismissClueSheetWithBack(WidgetTester tester) async {
+  await tester.binding.handlePopRoute();
   await tester.pumpAndSettle();
 }
 

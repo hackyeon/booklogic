@@ -15,6 +15,7 @@ import '../core/ads/interstitial/interstitial_ad_controller.dart';
 import '../core/ads/interstitial/interstitial_ad_gateway.dart';
 import '../core/ads/interstitial/interstitial_ad_policy.dart';
 import '../core/ads/interstitial/next_level_ad_gate.dart';
+import '../core/ads/presentation/interstitial_system_bar_guard.dart';
 import '../core/ads/sdk/google_mobile_ads_initializer.dart';
 import '../core/ads/sdk/mobile_ads_initializer.dart';
 import '../core/constants/app_strings.dart';
@@ -210,6 +211,18 @@ class _BookLogicAppState extends State<BookLogicApp>
         title: AppStrings.appTitle,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
+        builder: (context, child) {
+          return AnimatedBuilder(
+            animation: _interstitialAdController,
+            child: child,
+            builder: (context, child) {
+              return InterstitialSystemBarGuard(
+                isShowing: _interstitialAdController.isShowing,
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+          );
+        },
         initialRoute: AppRoutes.home,
         routes: {
           AppRoutes.home: (_) => HomeScreen(

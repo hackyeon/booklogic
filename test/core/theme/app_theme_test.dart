@@ -63,4 +63,14 @@ void main() {
     );
     expect(style.systemNavigationBarIconBrightness, Brightness.light);
   });
+
+  test('interstitial system UI keeps navigation policy and light icons', () {
+    final style = AppTheme.interstitialSystemUiOverlayStyle;
+
+    expect(style.statusBarColor, Colors.transparent);
+    expect(style.statusBarIconBrightness, Brightness.light);
+    expect(style.systemStatusBarContrastEnforced, isFalse);
+    expect(style.systemNavigationBarColor, AppColors.background);
+    expect(style.systemNavigationBarIconBrightness, Brightness.dark);
+  });
 }

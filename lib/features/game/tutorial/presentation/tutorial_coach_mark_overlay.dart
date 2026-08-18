@@ -18,7 +18,6 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
     required this.onSkipConfirmed,
     this.onTargetTap,
     this.blockBackgroundInteraction = true,
-    this.ignorePointers = false,
     this.useRootSafeInsets = false,
     super.key,
   });
@@ -31,7 +30,6 @@ class TutorialCoachMarkOverlay extends StatefulWidget {
   final VoidCallback onSkipConfirmed;
   final VoidCallback? onTargetTap;
   final bool blockBackgroundInteraction;
-  final bool ignorePointers;
   final bool useRootSafeInsets;
 
   @override
@@ -43,6 +41,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
   Rect? _targetRect;
   String? _measuredTargetId;
   int _measureAttempts = 0;
+  bool _isSkipConfirmationOpen = false;
 
   @override
   void initState() {
@@ -63,7 +62,6 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final targetRect = _paddedTargetRect(context);
     final safeInsets = widget.useRootSafeInsets
         ? MediaQuery.viewPaddingOf(context)
         : EdgeInsets.zero;
@@ -72,6 +70,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     final overlay = LayoutBuilder(
       builder: (context, constraints) {
         final size = Size(constraints.maxWidth, constraints.maxHeight);
+        final targetRect = _paddedTargetRect(size);
 
         return Stack(
           children: [
@@ -115,22 +114,17 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
                   targetRect: targetRect,
                   safeInsets: safeInsets,
                 ),
-                child: IgnorePointer(
-                  ignoring:
-                      widget.onTargetTap != null &&
-                      !widget.step.requiresAcknowledgement,
-                  child: TutorialMessageCard(
-                    message: widget.step.message,
-                    secondaryMessage: widget.step.secondaryMessage,
-                    stepLabel:
-                        '튜토리얼 ${widget.stepIndex + 1}/${widget.totalStepCount}',
-                    actionLabel: widget.step.actionLabel,
-                    onAction: widget.step.requiresAcknowledgement
-                        ? widget.onAcknowledge
-                        : null,
-                    canSkip: widget.step.allowSkip,
-                    onSkip: _confirmSkip,
-                  ),
+                child: TutorialMessageCard(
+                  message: widget.step.message,
+                  secondaryMessage: widget.step.secondaryMessage,
+                  stepLabel:
+                      '튜토리얼 ${widget.stepIndex + 1}/${widget.totalStepCount}',
+                  actionLabel: widget.step.actionLabel,
+                  onAction: widget.step.requiresAcknowledgement
+                      ? widget.onAcknowledge
+                      : null,
+                  canSkip: widget.step.allowSkip,
+                  onSkip: _confirmSkip,
                 ),
               ),
             ),
@@ -141,7 +135,7 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     return Positioned.fill(
       child: SizedBox.expand(
         key: const Key('tutorial_overlay_bounds'),
-        child: widget.ignorePointers ? IgnorePointer(child: overlay) : overlay,
+        child: overlay,
       ),
     );
   }
@@ -191,18 +185,17 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
     ];
   }
 
-  Rect? _paddedTargetRect(BuildContext context) {
+  Rect? _paddedTargetRect(Size overlaySize) {
     final rect = _targetRect;
     if (rect == null) {
       return null;
     }
-    final mediaSize = MediaQuery.sizeOf(context);
     final padded = rect.inflate(8);
     return Rect.fromLTRB(
-      padded.left.clamp(0.0, mediaSize.width),
-      padded.top.clamp(0.0, mediaSize.height),
-      padded.right.clamp(0.0, mediaSize.width),
-      padded.bottom.clamp(0.0, mediaSize.height),
+      padded.left.clamp(0.0, overlaySize.width),
+      padded.top.clamp(0.0, overlaySize.height),
+      padded.right.clamp(0.0, overlaySize.width),
+      padded.bottom.clamp(0.0, overlaySize.height),
     );
   }
 
@@ -256,25 +249,36 @@ class _TutorialCoachMarkOverlayState extends State<TutorialCoachMarkOverlay> {
   }
 
   Future<void> _confirmSkip() async {
-    final shouldSkip = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('튜토리얼을 건너뛸까요?'),
-          content: const Text('게임은 계속 진행할 수 있으며, 새로운 단서 설명은 이후에도 확인할 수 있습니다.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('계속 배우기'),
+    if (_isSkipConfirmationOpen) {
+      return;
+    }
+    _isSkipConfirmationOpen = true;
+    bool? shouldSkip;
+    try {
+      shouldSkip = await showDialog<bool>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('튜토리얼을 건너뛸까요?'),
+            content: const Text(
+              '게임은 계속 진행할 수 있으며, 새로운 단서 설명은 이후에도 확인할 수 있습니다.',
             ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('건너뛰기'),
-            ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('계속 배우기'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('건너뛰기'),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      _isSkipConfirmationOpen = false;
+    }
     if (shouldSkip == true && mounted) {
       widget.onSkipConfirmed();
     }
@@ -336,10 +340,32 @@ class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
     final belowTop = targetRect!.bottom + AppDimensions.mediumSpacing;
     final hasRoomBelow =
         belowTop + childSize.height + bottomEdge <= size.height;
-    final desiredTop = hasRoomBelow
-        ? belowTop
-        : targetRect!.top - childSize.height - AppDimensions.mediumSpacing;
-    return Offset(left, desiredTop.clamp(topEdge, verticalLimit));
+    if (hasRoomBelow) {
+      return Offset(left, belowTop);
+    }
+
+    final aboveTop =
+        targetRect!.top - childSize.height - AppDimensions.mediumSpacing;
+    if (aboveTop >= topEdge) {
+      return Offset(left, aboveTop);
+    }
+
+    final clampedBelowTop = belowTop.clamp(topEdge, verticalLimit);
+    final clampedAboveTop = aboveTop.clamp(topEdge, verticalLimit);
+    final belowOverlap = _verticalOverlap(
+      top: clampedBelowTop,
+      height: childSize.height,
+      target: targetRect!,
+    );
+    final aboveOverlap = _verticalOverlap(
+      top: clampedAboveTop,
+      height: childSize.height,
+      target: targetRect!,
+    );
+    return Offset(
+      left,
+      belowOverlap <= aboveOverlap ? clampedBelowTop : clampedAboveTop,
+    );
   }
 
   @override
@@ -347,6 +373,17 @@ class _TutorialMessageLayoutDelegate extends SingleChildLayoutDelegate {
     return oldDelegate.targetRect != targetRect ||
         oldDelegate.safeInsets != safeInsets;
   }
+}
+
+double _verticalOverlap({
+  required double top,
+  required double height,
+  required Rect target,
+}) {
+  return math.max(
+    0,
+    math.min(top + height, target.bottom) - math.max(top, target.top),
+  );
 }
 
 class _Barrier extends StatelessWidget {
