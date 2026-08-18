@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/ads/consent/ad_consent_controller.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_urls.dart';
 import '../../../core/feedback/application/app_feedback_settings_controller.dart';
 import '../../../core/feedback/domain/game_haptic_cue.dart';
 import '../../../core/feedback/domain/game_sound_cue.dart';
@@ -12,12 +14,15 @@ import '../../../core/feedback/haptic/game_haptic_player.dart';
 import '../../../core/feedback/sound/game_sound_player.dart';
 import '../../../core/theme/app_colors.dart';
 
+typedef SettingsUrlLauncher = Future<bool> Function(Uri uri, {LaunchMode mode});
+
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
     required this.feedbackSettingsController,
     required this.soundPlayer,
     required this.hapticPlayer,
     this.adConsentController,
+    this.urlLauncher = launchUrl,
     super.key,
   });
 
@@ -25,6 +30,7 @@ class SettingsScreen extends StatefulWidget {
   final AdConsentController? adConsentController;
   final GameSoundPlayer soundPlayer;
   final GameHapticPlayer hapticPlayer;
+  final SettingsUrlLauncher urlLauncher;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -106,9 +112,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsSection(
                   children: [
                     ListTile(
+                      key: const Key('settings_privacy_policy'),
                       title: const Text(AppStrings.privacyPolicy),
                       trailing: const Icon(Icons.chevron_right_rounded),
-                      onTap: () => _showPrivacySnackBar(context),
+                      onTap: _openPrivacyPolicy,
                     ),
                     if (adConsentController?.privacyOptionsRequired ==
                         true) ...[
@@ -207,11 +214,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  void _showPrivacySnackBar(BuildContext context) {
+  Future<void> _openPrivacyPolicy() async {
+    var launched = false;
+    try {
+      launched = await widget.urlLauncher(
+        Uri.parse(AppUrls.privacyPolicy),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      launched = false;
+    }
+    if (!mounted || launched) {
+      return;
+    }
+    _showPrivacyOpenError();
+  }
+
+  void _showPrivacyOpenError() {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        const SnackBar(content: Text(AppStrings.privacyPlaceholder)),
+        const SnackBar(content: Text(AppStrings.privacyPolicyOpenError)),
       );
   }
 }

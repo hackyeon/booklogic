@@ -43,7 +43,7 @@ class AppStrings {
   static const sound = '효과음';
   static const music = '배경음악';
   static const haptic = '진동';
-  static const privacyPolicy = '개인정보처리방침';
+  static const privacyPolicy = '개인정보 처리방침';
+  static const privacyPolicyOpenError = '개인정보 처리방침을 열 수 없습니다. 잠시 후 다시 시도해 주세요.';
   static const openSourceLicenses = '오픈소스 라이선스';
-  static const privacyPlaceholder = '출시 준비 단계에서 연결됩니다.';
 }
