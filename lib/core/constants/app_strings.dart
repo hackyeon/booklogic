@@ -1,7 +1,7 @@
 class AppStrings {
   const AppStrings._();
 
-  static const appTitle = '책장 추리 퍼즐';
+  static const appTitle = '책은 제자리에';
   static const appSubtitle = '단서를 따라 책장을 정리해보세요';
 
   static const continueButton = '계속하기';
