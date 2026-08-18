@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:booklogic/core/ads/config/admob_production_ids.dart';
+import 'package:booklogic/core/ads/config/admob_test_ids.dart';
 import 'package:booklogic/core/release/release_check_result.dart';
 import 'package:booklogic/core/release/release_check_severity.dart';
 import 'package:booklogic/core/release/release_check_status.dart';
@@ -23,7 +25,12 @@ const releaseOutputDirectory = 'build/release_qa';
 const generatorV1Checksum = GeneratorV1QualityManifest.checksum;
 const generatorV2Checksum = GeneratorV2QualityManifest.checksum;
 
-final _fullAdMobIdPattern = RegExp(r'ca-app-pub-\d{16}[/~]\d{10}');
+final _fullAdMobIdPattern = RegExp(r'ca-app-pub-(\d{16})[/~]\d{10}');
+const _knownAdMobPublisherIds = {
+  '3940256099942544',
+  '6427159244427547',
+  '0000000000000000',
+};
 final _placeholderIdentifierPattern = RegExp(
   r'^(com\.example|org\.example|your\.company)',
 );
@@ -627,6 +634,9 @@ ReleaseCheckResult _verifyAndroidConfiguration(ProjectInfo info) {
   if (!gradle.contains('ADMOB_ANDROID_APP_ID')) {
     failures.add('missing release AdMob App ID injection');
   }
+  if (!_containsProductionAppId(gradle)) {
+    failures.add('missing production AdMob App ID default');
+  }
   if (!gradle.contains('Release builds must not use the sample AdMob App ID')) {
     failures.add('missing sample AdMob App ID release guard');
   }
@@ -692,6 +702,9 @@ ReleaseCheckResult _verifyIosConfiguration(ProjectInfo info) {
   if (!release.contains(r'ADMOB_APP_ID=$(ADMOB_IOS_APP_ID)')) {
     failures.add('missing release App ID injection');
   }
+  if (!_containsProductionAppId(release)) {
+    failures.add('missing production release App ID default');
+  }
   if (release.contains('ca-app-pub-3940256099942544')) {
     failures.add('release uses sample App ID');
   }
@@ -729,6 +742,9 @@ ReleaseCheckResult _verifyAdConfiguration() {
   final provider = File(
     'lib/core/ads/config/ad_unit_id_provider.dart',
   ).readAsStringSync();
+  final productionIds = File(
+    'lib/core/ads/config/admob_production_ids.dart',
+  ).readAsStringSync();
   final policy = File(
     'lib/core/ads/interstitial/interstitial_ad_policy.dart',
   ).readAsStringSync();
@@ -742,6 +758,24 @@ ReleaseCheckResult _verifyAdConfiguration() {
   if (!provider.contains('AdMobTestIds.isTestInterstitialId')) {
     failures.add('release test ad unit guard missing');
   }
+  if (!runtime.contains(
+    'defaultValue: AdMobProductionIds.androidInterstitial',
+  )) {
+    failures.add('Android production interstitial default missing');
+  }
+  if (!runtime.contains('defaultValue: AdMobProductionIds.iosInterstitial')) {
+    failures.add('iOS production interstitial default missing');
+  }
+  if (!productionIds.contains(AdMobProductionIds.androidInterstitial) ||
+      !productionIds.contains(AdMobProductionIds.iosInterstitial)) {
+    failures.add('production interstitial IDs are incomplete');
+  }
+  if (AdMobTestIds.isTestInterstitialId(
+        AdMobProductionIds.androidInterstitial,
+      ) ||
+      AdMobTestIds.isTestInterstitialId(AdMobProductionIds.iosInterstitial)) {
+    failures.add('production interstitial ID matches a test ID');
+  }
   if (!policy.contains('currentLevel < 6')) {
     failures.add('level 1-5 ad exclusion policy missing');
   }
@@ -749,7 +783,7 @@ ReleaseCheckResult _verifyAdConfiguration() {
       ? _passed(
           'ad_release_configuration',
           'Ad release configuration',
-          'Debug/Profile test IDs are separated from Release runtime injection.',
+          'Debug/Profile test IDs are separated from Release production defaults.',
         )
       : _failed(
           'ad_release_configuration',
@@ -796,10 +830,10 @@ ReleaseCheckResult _verifySecretScan() {
           lower.contains('client_secret')) {
         findings.add('${_relativePath(file.path)}:${index + 1}');
       }
-      if (_fullAdMobIdPattern.hasMatch(line) &&
-          !line.contains('3940256099942544') &&
-          !line.contains('0000000000000000')) {
-        findings.add('${_relativePath(file.path)}:${index + 1}');
+      for (final match in _fullAdMobIdPattern.allMatches(line)) {
+        if (!_knownAdMobPublisherIds.contains(match.group(1))) {
+          findings.add('${_relativePath(file.path)}:${index + 1}');
+        }
       }
     }
   }
@@ -807,7 +841,7 @@ ReleaseCheckResult _verifySecretScan() {
       ? _passed(
           'secret_scan',
           'Secret scan',
-          'No obvious hard-coded signing secrets or production AdMob IDs were found.',
+          'No obvious hard-coded signing secrets or unknown AdMob IDs were found.',
         )
       : _failed(
           'secret_scan',
@@ -1130,6 +1164,13 @@ ReleaseCheckResult _manual(
 
 bool _containsMaskedSampleAppId(String value) {
   return value.contains('ca-app-pub-3940256099942544') && value.contains('~');
+}
+
+bool _containsProductionAppId(String value) {
+  return _fullAdMobIdPattern.allMatches(value).any((match) {
+    return match.group(1) == '6427159244427547' &&
+        match.group(0)!.contains('~');
+  });
 }
 
 String _firstMatch(String source, RegExp pattern) {

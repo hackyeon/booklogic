@@ -16,29 +16,18 @@ plugins {
 }
 
 val sampleAndroidAdMobAppId = "ca-app-pub-3940256099942544~3347511713"
-val missingReleaseAdMobAppId = "ca-app-pub-0000000000000000~0000000000"
-
-fun isReleaseBuildRequested(): Boolean {
-    return gradle.startParameter.taskNames.any {
-        it.contains("Release", ignoreCase = true)
-    }
-}
+val productionAndroidAdMobAppId = "ca-app-pub-6427159244427547~8152679496"
 
 fun releaseAdMobAppId(): String {
     val configuredId =
         providers.gradleProperty("ADMOB_ANDROID_APP_ID").orNull
             ?: providers.environmentVariable("ADMOB_ANDROID_APP_ID").orNull
             ?: ""
-    if (!isReleaseBuildRequested()) {
-        return configuredId.ifBlank { missingReleaseAdMobAppId }
-    }
-    if (configuredId.isBlank()) {
-        throw GradleException("ADMOB_ANDROID_APP_ID is required for release builds.")
-    }
-    if (configuredId == sampleAndroidAdMobAppId) {
+    val releaseId = configuredId.ifBlank { productionAndroidAdMobAppId }
+    if (releaseId == sampleAndroidAdMobAppId) {
         throw GradleException("Release builds must not use the sample AdMob App ID.")
     }
-    return configuredId
+    return releaseId
 }
 
 android {

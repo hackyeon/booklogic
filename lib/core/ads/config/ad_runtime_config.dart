@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
+import 'admob_production_ids.dart';
+
 class AdRuntimeConfig {
   const AdRuntimeConfig({
     required this.isTestMode,
@@ -18,9 +20,11 @@ class AdRuntimeConfig {
       adsEnabled: true,
       androidInterstitialAdUnitId: const String.fromEnvironment(
         'ADMOB_ANDROID_INTERSTITIAL_ID',
+        defaultValue: AdMobProductionIds.androidInterstitial,
       ),
       iosInterstitialAdUnitId: const String.fromEnvironment(
         'ADMOB_IOS_INTERSTITIAL_ID',
+        defaultValue: AdMobProductionIds.iosInterstitial,
       ),
       umpTestDeviceIds: isRelease ? const [] : _umpTestDeviceIds,
       debugGeography: isRelease ? null : _debugGeography,

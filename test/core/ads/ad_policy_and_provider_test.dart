@@ -1,5 +1,6 @@
 import 'package:booklogic/core/ads/config/ad_runtime_config.dart';
 import 'package:booklogic/core/ads/config/ad_unit_id_provider.dart';
+import 'package:booklogic/core/ads/config/admob_production_ids.dart';
 import 'package:booklogic/core/ads/config/admob_test_ids.dart';
 import 'package:booklogic/core/ads/consent/ad_consent_controller.dart';
 import 'package:booklogic/core/ads/domain/interstitial_show_outcome.dart';
@@ -57,8 +58,13 @@ void main() {
   });
 
   group('PlatformAdUnitIdProvider', () {
-    test('returns official test interstitial ids in test mode', () {
-      const config = AdRuntimeConfig(isTestMode: true, adsEnabled: true);
+    test('returns official test ids even when production defaults exist', () {
+      const config = AdRuntimeConfig(
+        isTestMode: true,
+        adsEnabled: true,
+        androidInterstitialAdUnitId: AdMobProductionIds.androidInterstitial,
+        iosInterstitialAdUnitId: AdMobProductionIds.iosInterstitial,
+      );
 
       expect(
         PlatformAdUnitIdProvider(
@@ -73,6 +79,20 @@ void main() {
           targetPlatform: TargetPlatform.iOS,
         ).interstitialAdUnitId,
         AdMobTestIds.iosInterstitial,
+      );
+      expect(
+        PlatformAdUnitIdProvider(
+          config: config,
+          targetPlatform: TargetPlatform.android,
+        ).interstitialAdUnitId,
+        isNot(AdMobProductionIds.androidInterstitial),
+      );
+      expect(
+        PlatformAdUnitIdProvider(
+          config: config,
+          targetPlatform: TargetPlatform.iOS,
+        ).interstitialAdUnitId,
+        isNot(AdMobProductionIds.iosInterstitial),
       );
     });
 
@@ -93,18 +113,40 @@ void main() {
       );
     });
 
-    test('uses production ids in release mode and rejects sample test ids', () {
+    test('uses exact production ids in release mode', () {
       expect(
         const PlatformAdUnitIdProvider(
           config: AdRuntimeConfig(
             isTestMode: false,
             adsEnabled: true,
-            androidInterstitialAdUnitId: 'ca-app-pub-123/456',
+            androidInterstitialAdUnitId: AdMobProductionIds.androidInterstitial,
           ),
           targetPlatform: TargetPlatform.android,
         ).interstitialAdUnitId,
-        'ca-app-pub-123/456',
+        AdMobProductionIds.androidInterstitial,
       );
+      expect(
+        const PlatformAdUnitIdProvider(
+          config: AdRuntimeConfig(
+            isTestMode: false,
+            adsEnabled: true,
+            iosInterstitialAdUnitId: AdMobProductionIds.iosInterstitial,
+          ),
+          targetPlatform: TargetPlatform.iOS,
+        ).interstitialAdUnitId,
+        AdMobProductionIds.iosInterstitial,
+      );
+      expect(
+        AdMobProductionIds.androidInterstitial,
+        isNot(AdMobTestIds.androidInterstitial),
+      );
+      expect(
+        AdMobProductionIds.iosInterstitial,
+        isNot(AdMobTestIds.iosInterstitial),
+      );
+    });
+
+    test('rejects official sample ids in release mode', () {
       expect(
         const PlatformAdUnitIdProvider(
           config: AdRuntimeConfig(
@@ -115,6 +157,45 @@ void main() {
           targetPlatform: TargetPlatform.android,
         ).interstitialAdUnitId,
         isNull,
+      );
+      expect(
+        const PlatformAdUnitIdProvider(
+          config: AdRuntimeConfig(
+            isTestMode: false,
+            adsEnabled: true,
+            iosInterstitialAdUnitId: AdMobTestIds.iosInterstitial,
+          ),
+          targetPlatform: TargetPlatform.iOS,
+        ).interstitialAdUnitId,
+        isNull,
+      );
+    });
+
+    test('environment config has production defaults behind test mode', () {
+      final config = AdRuntimeConfig.fromEnvironment();
+
+      expect(config.isTestMode, isTrue);
+      expect(
+        config.androidInterstitialAdUnitId,
+        AdMobProductionIds.androidInterstitial,
+      );
+      expect(
+        config.iosInterstitialAdUnitId,
+        AdMobProductionIds.iosInterstitial,
+      );
+      expect(
+        PlatformAdUnitIdProvider(
+          config: config,
+          targetPlatform: TargetPlatform.android,
+        ).interstitialAdUnitId,
+        AdMobTestIds.androidInterstitial,
+      );
+      expect(
+        PlatformAdUnitIdProvider(
+          config: config,
+          targetPlatform: TargetPlatform.iOS,
+        ).interstitialAdUnitId,
+        AdMobTestIds.iosInterstitial,
       );
     });
   });

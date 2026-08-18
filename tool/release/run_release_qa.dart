@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:booklogic/core/ads/config/admob_production_ids.dart';
+import 'package:booklogic/core/ads/config/admob_test_ids.dart';
 import 'package:booklogic/core/release/release_check_result.dart';
 import 'package:booklogic/core/release/release_check_severity.dart';
 import 'package:booklogic/core/release/release_check_status.dart';
@@ -180,8 +182,12 @@ Future<List<ReleaseCheckResult>> _runCommands({
 }
 
 ReleaseCheckResult _androidReleaseAabReadiness() {
-  final hasAdMobAppId = _hasEnvOrDefine('ADMOB_ANDROID_APP_ID');
-  final hasAdUnitId = _hasEnvOrDefine('ADMOB_ANDROID_INTERSTITIAL_ID');
+  final hasAdMobAppId =
+      _hasEnvOrDefine('ADMOB_ANDROID_APP_ID') ||
+      _fileContainsProductionAppId('android/app/build.gradle.kts');
+  final hasAdUnitId =
+      _hasEnvOrDefine('ADMOB_ANDROID_INTERSTITIAL_ID') ||
+      _isProductionAdUnitId(AdMobProductionIds.androidInterstitial);
   final signingReady = File('android/key.properties').existsSync();
   if (hasAdMobAppId && hasAdUnitId && signingReady) {
     return ReleaseCheckResult(
@@ -190,7 +196,12 @@ ReleaseCheckResult _androidReleaseAabReadiness() {
       severity: ReleaseCheckSeverity.warning,
       status: ReleaseCheckStatus.manualRequired,
       message:
-          'Release inputs appear present; run appbundle build in the release signing environment.',
+          'Release defaults and signing input are configured; run the appbundle build in the release environment.',
+      evidence: const [
+        'Android AdMob App ID=configured',
+        'Android interstitial=configured',
+        'android/key.properties=present',
+      ],
     );
   }
   return ReleaseCheckResult(
@@ -199,20 +210,24 @@ ReleaseCheckResult _androidReleaseAabReadiness() {
     severity: ReleaseCheckSeverity.blocker,
     status: ReleaseCheckStatus.unavailable,
     message:
-        'Android release AAB was not built because production ad IDs or release signing inputs are missing.',
+        'Android release AAB readiness is missing production configuration or signing input.',
     remediation:
-        'Provide real AdMob IDs and release signing through untracked local files or CI secrets.',
+        'Verify production AdMob defaults and provide release signing through an untracked local file or CI secret.',
     evidence: [
-      'ADMOB_ANDROID_APP_ID=${hasAdMobAppId ? 'present' : 'missing'}',
-      'ADMOB_ANDROID_INTERSTITIAL_ID=${hasAdUnitId ? 'present' : 'missing'}',
+      'Android AdMob App ID=${hasAdMobAppId ? 'configured' : 'missing'}',
+      'Android interstitial=${hasAdUnitId ? 'configured' : 'missing'}',
       'android/key.properties=${signingReady ? 'present' : 'missing'}',
     ],
   );
 }
 
 ReleaseCheckResult _iosReleaseReadiness() {
-  final hasAppId = _hasEnvOrDefine('ADMOB_IOS_APP_ID');
-  final hasAdUnitId = _hasEnvOrDefine('ADMOB_IOS_INTERSTITIAL_ID');
+  final hasAppId =
+      _hasEnvOrDefine('ADMOB_IOS_APP_ID') ||
+      _fileContainsProductionAppId('ios/Flutter/Release.xcconfig');
+  final hasAdUnitId =
+      _hasEnvOrDefine('ADMOB_IOS_INTERSTITIAL_ID') ||
+      _isProductionAdUnitId(AdMobProductionIds.iosInterstitial);
   if (hasAppId && hasAdUnitId) {
     return ReleaseCheckResult(
       code: 'ios_release_no_codesign_readiness',
@@ -220,7 +235,11 @@ ReleaseCheckResult _iosReleaseReadiness() {
       severity: ReleaseCheckSeverity.warning,
       status: ReleaseCheckStatus.manualRequired,
       message:
-          'Release ad inputs appear present; run iOS release no-codesign build in the release environment.',
+          'Release production defaults are configured; run the iOS release no-codesign build in the release environment.',
+      evidence: const [
+        'iOS AdMob App ID=configured',
+        'iOS interstitial=configured',
+      ],
     );
   }
   return ReleaseCheckResult(
@@ -229,12 +248,12 @@ ReleaseCheckResult _iosReleaseReadiness() {
     severity: ReleaseCheckSeverity.blocker,
     status: ReleaseCheckStatus.unavailable,
     message:
-        'iOS release no-codesign build was not run because production ad IDs are missing.',
+        'iOS release no-codesign readiness is missing production ad configuration.',
     remediation:
-        'Provide real iOS AdMob App ID and interstitial ad unit ID before release validation.',
+        'Verify the iOS production App ID and interstitial defaults before release validation.',
     evidence: [
-      'ADMOB_IOS_APP_ID=${hasAppId ? 'present' : 'missing'}',
-      'ADMOB_IOS_INTERSTITIAL_ID=${hasAdUnitId ? 'present' : 'missing'}',
+      'iOS AdMob App ID=${hasAppId ? 'configured' : 'missing'}',
+      'iOS interstitial=${hasAdUnitId ? 'configured' : 'missing'}',
     ],
   );
 }
@@ -242,6 +261,21 @@ ReleaseCheckResult _iosReleaseReadiness() {
 bool _hasEnvOrDefine(String key) {
   final value = Platform.environment[key]?.trim();
   return value != null && value.isNotEmpty;
+}
+
+bool _fileContainsProductionAppId(String path) {
+  final file = File(path);
+  if (!file.existsSync()) {
+    return false;
+  }
+  return RegExp(
+    r'ca-app-pub-6427159244427547~\d{10}',
+  ).hasMatch(file.readAsStringSync());
+}
+
+bool _isProductionAdUnitId(String value) {
+  return RegExp(r'^ca-app-pub-\d{16}/\d{10}$').hasMatch(value) &&
+      !AdMobTestIds.isTestInterstitialId(value);
 }
 
 class _QaCommand {
