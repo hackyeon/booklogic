@@ -20,6 +20,7 @@ class RuleIntroductionOverlay extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Positioned.fill(
+      key: const Key('rule_introduction_overlay_bounds'),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {},

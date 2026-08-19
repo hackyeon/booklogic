@@ -1,6 +1,7 @@
 import 'package:booklogic/core/constants/app_durations.dart';
 import 'package:booklogic/core/progress/game_progress.dart';
 import 'package:booklogic/core/progress/game_progress_controller.dart';
+import 'package:booklogic/core/theme/app_colors.dart';
 import 'package:booklogic/core/theme/app_theme.dart';
 import 'package:booklogic/features/game/generator/generator_version_policy.dart';
 import 'package:booklogic/features/game/generator/stage_generator.dart';
@@ -10,6 +11,7 @@ import 'package:booklogic/features/game/tutorial/application/tutorial_plan_facto
 import 'package:booklogic/features/game/tutorial/domain/learning_progress.dart';
 import 'package:booklogic/features/game/tutorial/domain/tutorial_step_type.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/fake_game_progress_store.dart';
@@ -212,6 +214,71 @@ void main() {
     expect(find.byKey(const Key('tutorial_overlay_bounds')), findsNothing);
     expect(find.text('새로운 단서'), findsOneWidget);
     expect(fixture.learningStore.saveCount, 1);
+  });
+
+  testWidgets('rule introduction dims the whole route and system UI', (
+    tester,
+  ) async {
+    await _pumpTutorialGame(
+      tester,
+      level: 6,
+      learningStore: FakeLearningProgressStore(
+        progress: LearningProgress(tutorialCompleted: true),
+      ),
+    );
+
+    final routeRect = tester.getRect(
+      find.byKey(const Key('game_screen_route_stack')),
+    );
+    final overlayRect = tester.getRect(
+      find.byKey(const Key('rule_introduction_overlay_bounds')),
+    );
+    final headerRect = tester.getRect(find.byKey(const Key('game_header')));
+    final scrimRect = tester.getRect(
+      find.byWidgetPredicate(
+        (widget) => widget is ColoredBox && widget.color == AppColors.ruleScrim,
+      ),
+    );
+
+    expect(
+      find.byKey(const Key('game_rule_introduction_route_overlay')),
+      findsOneWidget,
+    );
+    expect(overlayRect, routeRect);
+    expect(scrimRect, routeRect);
+    expect(scrimRect.contains(headerRect.center), isTrue);
+    expect(
+      tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byKey(const Key('game_system_ui_style')),
+          )
+          .value,
+      AppTheme.ruleIntroductionSystemUiOverlayStyle,
+    );
+
+    final routeOverlay = find.byKey(
+      const Key('game_rule_introduction_route_overlay'),
+    );
+    for (
+      var acknowledgementCount = 0;
+      acknowledgementCount < 10 && routeOverlay.evaluate().isNotEmpty;
+      acknowledgementCount += 1
+    ) {
+      await tester.tap(
+        find.byKey(const Key('rule_introduction_acknowledge_button')),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    expect(routeOverlay, findsNothing);
+    expect(
+      tester
+          .widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+            find.byKey(const Key('game_system_ui_style')),
+          )
+          .value,
+      AppTheme.systemUiOverlayStyle,
+    );
   });
 }
 

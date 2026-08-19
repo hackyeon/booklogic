@@ -30,6 +30,20 @@ class AppTheme {
     systemNavigationBarIconBrightness: Brightness.light,
   );
 
+  static final ruleIntroductionSystemUiOverlayStyle = systemUiOverlayStyle
+      .copyWith(
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color.alphaBlend(
+          AppColors.ruleScrim,
+          AppColors.background,
+        ),
+        systemNavigationBarDividerColor: Color.alphaBlend(
+          AppColors.ruleScrim,
+          AppColors.divider,
+        ),
+        systemNavigationBarIconBrightness: Brightness.light,
+      );
+
   static final clearResultSystemUiOverlayStyle = systemUiOverlayStyle.copyWith(
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarColor: Color.alphaBlend(

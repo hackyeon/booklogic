@@ -406,6 +406,7 @@ class _GameScreenState extends State<GameScreen> {
     final shouldShowTutorialOverlay = _shouldShowMainTutorialOverlay(
       controller,
     );
+    final ruleIntroduction = _currentRuleIntroduction;
     final gameScaffold = Scaffold(
       body: SafeArea(
         child: Column(
@@ -479,11 +480,6 @@ class _GameScreenState extends State<GameScreen> {
                       ),
                     ),
                   ),
-                  if (!controller.isCleared && _currentRuleIntroduction != null)
-                    RuleIntroductionOverlay(
-                      introduction: _currentRuleIntroduction!,
-                      onAcknowledge: _acknowledgeCurrentRuleIntroduction,
-                    ),
                 ],
               ),
             ),
@@ -498,6 +494,8 @@ class _GameScreenState extends State<GameScreen> {
           ? AppTheme.clearResultSystemUiOverlayStyle
           : shouldShowTutorialOverlay
           ? AppTheme.tutorialSystemUiOverlayStyle
+          : ruleIntroduction != null
+          ? AppTheme.ruleIntroductionSystemUiOverlayStyle
           : AppTheme.systemUiOverlayStyle,
       child: Stack(
         key: const Key('game_screen_route_stack'),
@@ -520,6 +518,12 @@ class _GameScreenState extends State<GameScreen> {
                   : null,
               blockBackgroundInteraction: true,
               useRootSafeInsets: true,
+            ),
+          if (!controller.isCleared && ruleIntroduction != null)
+            RuleIntroductionOverlay(
+              key: const Key('game_rule_introduction_route_overlay'),
+              introduction: ruleIntroduction,
+              onAcknowledge: _acknowledgeCurrentRuleIntroduction,
             ),
           if (controller.isCleared)
             ClearResultOverlay(

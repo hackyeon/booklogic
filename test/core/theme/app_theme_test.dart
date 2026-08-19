@@ -48,6 +48,22 @@ void main() {
     expect(style.systemNavigationBarIconBrightness, Brightness.light);
   });
 
+  test('rule introduction system UI follows the full-screen dim layer', () {
+    final style = AppTheme.ruleIntroductionSystemUiOverlayStyle;
+
+    expect(style.statusBarColor, Colors.transparent);
+    expect(style.statusBarIconBrightness, Brightness.light);
+    expect(
+      style.systemNavigationBarColor,
+      Color.alphaBlend(AppColors.ruleScrim, AppColors.background),
+    );
+    expect(
+      style.systemNavigationBarDividerColor,
+      Color.alphaBlend(AppColors.ruleScrim, AppColors.divider),
+    );
+    expect(style.systemNavigationBarIconBrightness, Brightness.light);
+  });
+
   test('clear result system UI follows the full-screen dim layer', () {
     final style = AppTheme.clearResultSystemUiOverlayStyle;
 
