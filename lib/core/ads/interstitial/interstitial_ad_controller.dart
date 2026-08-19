@@ -11,6 +11,8 @@ import 'interstitial_ad_gateway.dart';
 import 'interstitial_ad_handle.dart';
 import 'interstitial_ad_policy.dart';
 
+typedef InterstitialPresentationBarrier = Future<void> Function();
+
 class InterstitialAdController extends ChangeNotifier {
   InterstitialAdController({
     required AdConsentController consentController,
@@ -18,17 +20,21 @@ class InterstitialAdController extends ChangeNotifier {
     required InterstitialAdGateway gateway,
     required AdUnitIdProvider adUnitIdProvider,
     required InterstitialAdPolicy policy,
+    InterstitialPresentationBarrier? presentationBarrier,
   }) : _consentController = consentController,
        _mobileAdsInitializer = mobileAdsInitializer,
        _gateway = gateway,
        _adUnitIdProvider = adUnitIdProvider,
-       _policy = policy;
+       _policy = policy,
+       _presentationBarrier =
+           presentationBarrier ?? _completePresentationImmediately;
 
   final AdConsentController _consentController;
   final MobileAdsInitializer _mobileAdsInitializer;
   final InterstitialAdGateway _gateway;
   final AdUnitIdProvider _adUnitIdProvider;
   final InterstitialAdPolicy _policy;
+  final InterstitialPresentationBarrier _presentationBarrier;
 
   InterstitialAdState _state = InterstitialAdState.waitingForConsent;
   InterstitialAdHandle? _readyAd;
@@ -142,6 +148,11 @@ class InterstitialAdController extends ChangeNotifier {
     _readyAd = null;
     _setState(InterstitialAdState.showing);
     try {
+      await _presentationBarrier();
+      if (_isDisposed) {
+        ad.dispose();
+        return InterstitialShowOutcome.controllerDisposed;
+      }
       final outcome = await ad.show();
       ad.dispose();
       if (!_isDisposed) {
@@ -246,3 +257,5 @@ class InterstitialAdController extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+Future<void> _completePresentationImmediately() => Future<void>.value();

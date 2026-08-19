@@ -52,6 +52,30 @@ void main() {
       fixture.dispose();
     });
 
+    test(
+      'waits for presentation readiness before invoking native show',
+      () async {
+        final handle = FakeInterstitialAdHandle();
+        final presentationReady = Completer<void>();
+        final fixture = await _buildControllerFixture(
+          ads: [handle],
+          presentationBarrier: () => presentationReady.future,
+        );
+        await fixture.controller.ensureLoaded(currentLevel: 6);
+
+        final showFuture = fixture.controller.showIfReady();
+
+        expect(fixture.controller.state, InterstitialAdState.showing);
+        expect(handle.showCount, 0);
+
+        presentationReady.complete();
+        expect(await showFuture, InterstitialShowOutcome.shownAndDismissed);
+        expect(handle.showCount, 1);
+
+        fixture.dispose();
+      },
+    );
+
     test('disposes stale loaded ads when loading is stopped', () async {
       final staleHandle = FakeInterstitialAdHandle();
       final completer = Completer<InterstitialAdHandle>();
@@ -120,6 +144,7 @@ void main() {
 
 Future<_ControllerFixture> _buildControllerFixture({
   List<InterstitialAdHandle> ads = const [],
+  InterstitialPresentationBarrier? presentationBarrier,
 }) async {
   final service = FakeAdConsentService(canRequestAdsValue: true);
   final consentController = AdConsentController(service: service);
@@ -132,6 +157,7 @@ Future<_ControllerFixture> _buildControllerFixture({
     gateway: gateway,
     adUnitIdProvider: FakeAdUnitIdProvider(id: 'test-interstitial'),
     policy: const InterstitialAdPolicy(),
+    presentationBarrier: presentationBarrier,
   );
   return _ControllerFixture(
     service: service,

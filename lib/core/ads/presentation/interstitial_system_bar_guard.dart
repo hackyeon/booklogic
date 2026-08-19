@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 
+/// Paints an opaque backing under Android's transparent status-bar inset while
+/// the native interstitial activity is displayed above the Flutter activity.
 class InterstitialSystemBarGuard extends StatefulWidget {
   const InterstitialSystemBarGuard({
     required this.isShowing,

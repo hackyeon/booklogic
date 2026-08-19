@@ -17,7 +17,10 @@ void main() {
     'Android guard follows controller showing state and caches top inset',
     (tester) async {
       final handle = _PendingInterstitialAdHandle();
-      final fixture = await _buildControllerFixture(handle);
+      final fixture = await _buildControllerFixture(
+        handle,
+        presentationBarrier: () => tester.binding.endOfFrame,
+      );
       final topInset = ValueNotifier<double>(24);
       addTearDown(fixture.dispose);
       addTearDown(topInset.dispose);
@@ -35,11 +38,13 @@ void main() {
       topInset.value = 0;
       final showFuture = fixture.controller.showIfReady();
       expect(fixture.controller.state, InterstitialAdState.showing);
+      expect(handle.showCount, 0);
       await tester.pump();
 
       expect(_scrim, findsOneWidget);
       expect(tester.getSize(_scrim).height, 24);
       expect(tester.widget<ColoredBox>(_scrim).color, Colors.black);
+      expect(handle.showCount, 1);
 
       handle.complete(InterstitialShowOutcome.shownAndDismissed);
       expect(await showFuture, InterstitialShowOutcome.shownAndDismissed);
@@ -161,8 +166,9 @@ Future<void> _pumpGuard(
 }
 
 Future<_ControllerFixture> _buildControllerFixture(
-  InterstitialAdHandle handle,
-) async {
+  InterstitialAdHandle handle, {
+  InterstitialPresentationBarrier? presentationBarrier,
+}) async {
   final service = FakeAdConsentService(canRequestAdsValue: true);
   final consentController = AdConsentController(service: service);
   await consentController.initialize();
@@ -172,6 +178,7 @@ Future<_ControllerFixture> _buildControllerFixture(
     gateway: FakeInterstitialAdGateway(ads: [handle]),
     adUnitIdProvider: FakeAdUnitIdProvider(id: 'test-interstitial'),
     policy: const InterstitialAdPolicy(),
+    presentationBarrier: presentationBarrier,
   );
   return _ControllerFixture(
     consentController: consentController,
@@ -198,9 +205,13 @@ class _PendingInterstitialAdHandle implements InterstitialAdHandle {
   final Completer<InterstitialShowOutcome> _completer =
       Completer<InterstitialShowOutcome>();
   int disposeCount = 0;
+  int showCount = 0;
 
   @override
-  Future<InterstitialShowOutcome> show() => _completer.future;
+  Future<InterstitialShowOutcome> show() {
+    showCount += 1;
+    return _completer.future;
+  }
 
   void complete(InterstitialShowOutcome outcome) {
     _completer.complete(outcome);

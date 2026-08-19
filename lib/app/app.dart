@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -127,6 +128,7 @@ class _BookLogicAppState extends State<BookLogicApp>
           widget.adUnitIdProvider ??
           PlatformAdUnitIdProvider(config: widget.adRuntimeConfig),
       policy: _interstitialAdPolicy,
+      presentationBarrier: _waitForInterstitialBackdrop,
     );
     _adSessionCoordinator = AdSessionCoordinator(
       consentController: _adConsentController,
@@ -201,6 +203,13 @@ class _BookLogicAppState extends State<BookLogicApp>
         currentLevel: _progressController.currentLevel,
       ),
     );
+  }
+
+  Future<void> _waitForInterstitialBackdrop() {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return Future<void>.value();
+    }
+    return WidgetsBinding.instance.endOfFrame;
   }
 
   @override
